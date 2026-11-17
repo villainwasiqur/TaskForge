@@ -31,6 +31,8 @@ test('command catalog contains all requested navigation, quick, and appearance a
       'Add New Habit',
       'Create New Goal',
       'Open Global Search',
+      'Undo Last Change',
+      'Redo Change',
     ],
   );
   assert.deepEqual(

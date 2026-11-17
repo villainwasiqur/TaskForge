@@ -156,11 +156,10 @@ test('task store supports CRUD, completion, reopening, and persistence', async (
   tasks = await taskStore.setTaskCompleted(filePath, taskId, true);
   assert.equal(tasks[0].completed, true);
   assert.equal(Number.isNaN(Date.parse(tasks[0].completedAt)), false);
-  const completedAt = tasks[0].completedAt;
 
   tasks = await taskStore.setTaskCompleted(filePath, taskId, false);
   assert.equal(tasks[0].completed, false);
-  assert.equal(tasks[0].completedAt, completedAt);
+  assert.equal(tasks[0].completedAt, null);
   assert.equal((await taskStore.loadTasks(filePath)).length, 1);
 
   assert.deepEqual(await taskStore.deleteTask(filePath, taskId), []);

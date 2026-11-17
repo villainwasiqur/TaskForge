@@ -9,6 +9,12 @@ const pageLinks = document.querySelectorAll('[data-page]');
 const navigationLinks = document.querySelectorAll('.navigation [data-page]');
 const taskDialog = document.querySelector('#task-dialog');
 const taskForm = document.querySelector('#task-form');
+const quickCaptureDialog = document.querySelector('#quick-capture-dialog');
+const quickCaptureTitle = document.querySelector('#quick-capture-title');
+const quickCaptureError = document.querySelector('#quick-capture-error');
+const quickCaptureSave = document.querySelector('#save-quick-capture');
+let quickCaptureProfileId = null;
+let quickCaptureOpening = false;
 const detailsDialog = document.querySelector('#task-details-dialog');
 const activityDialog = document.querySelector('#activity-dialog');
 const activityForm = document.querySelector('#activity-form');
@@ -22,6 +28,15 @@ const notificationCenterButton = document.querySelector('#notification-center-bu
 const notificationCenterDialog = document.querySelector('#notification-center-dialog');
 const notificationCenterSummary = document.querySelector('#notification-center-summary');
 const notificationCenterList = document.querySelector('#notification-center-list');
+const notificationCenterDot = document.querySelector('#notification-button-dot');
+const notificationCenterBadge = document.querySelector('#notification-button-badge');
+const notificationCenterTabs = [...document.querySelectorAll('[data-notification-tab]')];
+const notificationCenterToolbar = document.querySelector('#notification-center-toolbar');
+const notificationMarkAllRead = document.querySelector('#notification-mark-all-read');
+const notificationClearHistory = document.querySelector('#notification-clear-history');
+const notificationRecentCount = document.querySelector('#notification-recent-count');
+const testNotificationButton = document.querySelector('#send-test-notification');
+const testNotificationStatus = document.querySelector('#test-notification-status');
 const globalSearchButton = document.querySelector('#global-search-button');
 const globalSearchInput = document.querySelector('#global-search-input');
 const globalSearchClear = document.querySelector('#global-search-clear');
@@ -53,6 +68,61 @@ const focusLiveClock = document.querySelector('#focus-live-clock');
 const focusStartButton = document.querySelector('#focus-start-button');
 const focusSettingsForm = document.querySelector('#focus-settings-form');
 const focusNotificationStatus = document.querySelector('#focus-notification-status');
+const appShell = document.querySelector('.app-shell');
+const profileButton = document.querySelector('#profile-button');
+const sidebarProfileAvatar = document.querySelector('#sidebar-profile-avatar');
+const sidebarProfileName = document.querySelector('#sidebar-profile-name');
+const sidebarProfilePlan = document.querySelector('#sidebar-profile-plan');
+const profileDialog = document.querySelector('#profile-dialog');
+const profileCurrentBadge = document.querySelector('#profile-current-badge');
+const profileCurrentAvatar = document.querySelector('#profile-current-avatar');
+const profileCurrentName = document.querySelector('#profile-current-name');
+const profileCurrentDetail = document.querySelector('#profile-current-detail');
+const profileEditForm = document.querySelector('#profile-edit-form');
+const profileEditName = document.querySelector('#profile-edit-name');
+const profileEditColors = document.querySelector('#profile-edit-colors');
+const profileEditError = document.querySelector('#profile-edit-error');
+const profileSecurityStatus = document.querySelector('#profile-security-status');
+const profilePinForm = document.querySelector('#profile-pin-form');
+const profilePinNew = document.querySelector('#profile-pin-new');
+const profilePinConfirm = document.querySelector('#profile-pin-confirm');
+const profilePinError = document.querySelector('#profile-pin-error');
+const profilePinRemove = document.querySelector('#profile-pin-remove');
+const profileLockNow = document.querySelector('#profile-lock-now');
+const profileList = document.querySelector('#profile-list');
+const profileSwitchForm = document.querySelector('#profile-switch-form');
+const profileSwitchName = document.querySelector('#profile-switch-name');
+const profileSwitchPin = document.querySelector('#profile-switch-pin');
+const profileSwitchError = document.querySelector('#profile-switch-error');
+const profileCreateForm = document.querySelector('#profile-create-form');
+const profileCreateName = document.querySelector('#profile-create-name');
+const profileCreateColors = document.querySelector('#profile-create-colors');
+const profileCreatePin = document.querySelector('#profile-create-pin');
+const profileCreateError = document.querySelector('#profile-create-error');
+const profileDeleteDialog = document.querySelector('#profile-delete-dialog');
+const profileDeleteName = document.querySelector('#profile-delete-name');
+const profileDeleteError = document.querySelector('#profile-delete-error');
+const lockScreen = document.querySelector('#lock-screen');
+const lockProfileAvatar = document.querySelector('#lock-profile-avatar');
+const lockProfileName = document.querySelector('#lock-profile-name');
+const lockForm = document.querySelector('#lock-form');
+const lockPin = document.querySelector('#lock-pin');
+const lockError = document.querySelector('#lock-error');
+const undoButton = document.querySelector('#undo-button');
+const redoButton = document.querySelector('#redo-button');
+const taskBulkToolbar = document.querySelector('#task-bulk-toolbar');
+const taskBulkCount = document.querySelector('#task-bulk-count');
+const scheduleBulkToolbar = document.querySelector('#schedule-bulk-toolbar');
+const scheduleBulkCount = document.querySelector('#schedule-bulk-count');
+const scheduleTaskStripList = document.querySelector('#schedule-task-strip-list');
+const scheduleTaskButton = document.querySelector('#schedule-task-button');
+const bulkRescheduleDialog = document.querySelector('#bulk-reschedule-dialog');
+const bulkRescheduleForm = document.querySelector('#bulk-reschedule-form');
+const bulkRescheduleSummary = document.querySelector('#bulk-reschedule-summary');
+const bulkRescheduleDate = document.querySelector('#bulk-reschedule-date');
+const bulkRescheduleDateDisplay = document.querySelector('#bulk-reschedule-date-display');
+const bulkRescheduleError = document.querySelector('#bulk-reschedule-error');
+const bulkRescheduleSave = document.querySelector('#save-bulk-reschedule');
 
 const clockFormatters = {
   '12-hour': new Intl.DateTimeFormat(undefined, {
@@ -71,6 +141,17 @@ const clockFormatters = {
 
 const weekdayFormatter = new Intl.DateTimeFormat(undefined, { weekday: 'long' });
 const weekdayShortFormatter = new Intl.DateTimeFormat(undefined, { weekday: 'short' });
+const longDateFormatter = new Intl.DateTimeFormat(undefined, {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+const readableDateFormatter = new Intl.DateTimeFormat(undefined, {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+});
 const liveClockFormatter = new Intl.DateTimeFormat('en-GB', {
   hour: '2-digit',
   minute: '2-digit',
@@ -227,7 +308,10 @@ let renderedScheduleDate = null;
 let scheduleRenderSignature = '';
 let toastTimeout;
 let lastAnalyticsDate = getLocalDateKey(new Date());
-let notificationCenterEvents = [];
+let notificationCenterState = null;
+let notificationCenterTab = 'upcoming';
+const notificationCenterItems = new Map();
+let notificationUnreadCount = 0;
 let notificationCenterLoading = false;
 let searchableNotifications = [];
 let searchIndex = window.taskForgeSearch.buildSearchIndex({});
@@ -247,6 +331,20 @@ let recentCommandIds = [];
 let commandPaletteResults = [];
 let selectedCommandIndex = -1;
 let commandHistoryError = '';
+const profilePalette = [
+  '#4C8DFF', '#8B5CF6', '#EC4899', '#EF4444',
+  '#F59E0B', '#10B981', '#14B8A6', '#64748B',
+];
+let profileState = { activeProfileId: null, locked: false, profiles: [], activeProfile: null };
+let workspaceLocked = false;
+let profileEditColor = profilePalette[0];
+let profileCreateColor = profilePalette[0];
+let pendingProfileSwitchId = null;
+let pendingProfileDeleteId = null;
+let profileActionPending = false;
+const selectedTaskIds = new Set();
+const selectedActivityIds = new Set();
+let undoState = { canUndo: false, canRedo: false, undoLabel: null, redoLabel: null };
 
 function updateDateAndClock() {
   const now = new Date();
@@ -254,7 +352,7 @@ function updateDateAndClock() {
   const dateKey = getLocalDateKey(now);
   if (dateKey !== displayedDateKey) {
     displayedDateKey = dateKey;
-    currentDate.textContent = `${weekdayFormatter.format(now)}, ${formatDateParts(now)}`;
+    currentDate.textContent = longDateFormatter.format(now);
   }
 }
 
@@ -266,6 +364,7 @@ function showPage(page) {
     view.hidden = view.dataset.view !== pageName;
   });
   currentPageLabel.textContent = pageTitles[pageName];
+  document.title = `TaskForge | ${pageTitles[pageName]}`;
 
   navigationLinks.forEach((link) => {
     const isActive = link.dataset.page === pageName;
@@ -320,10 +419,14 @@ function openGlobalSearch() {
   globalSearchInput.focus();
 }
 
+function profileStorageKey(baseKey) {
+  return profileState.activeProfileId ? `${baseKey}:${profileState.activeProfileId}` : baseKey;
+}
+
 function loadRecentCommands() {
   commandHistoryError = '';
   try {
-    const stored = window.localStorage.getItem(recentCommandStorageKey);
+    const stored = window.localStorage.getItem(profileStorageKey(recentCommandStorageKey));
     recentCommandIds = window.taskForgeCommandPalette.normalizeRecentCommands(
       stored ? JSON.parse(stored) : [],
     );
@@ -336,7 +439,7 @@ function loadRecentCommands() {
 function saveRecentCommand(commandId) {
   recentCommandIds = window.taskForgeCommandPalette.addRecentCommand(recentCommandIds, commandId);
   try {
-    window.localStorage.setItem(recentCommandStorageKey, JSON.stringify(recentCommandIds));
+    window.localStorage.setItem(profileStorageKey(recentCommandStorageKey), JSON.stringify(recentCommandIds));
   } catch (error) {
     showToast(`Command ran, but recent commands could not be saved: ${error.message}`, true);
   }
@@ -514,6 +617,10 @@ async function executeCommand(commandId) {
     openGoalForm();
   } else if (commandId === 'open-search') {
     openGlobalSearch();
+  } else if (commandId === 'undo') {
+    await undoLastChange();
+  } else if (commandId === 'redo') {
+    await redoLastChange();
   } else if (commandId === 'start-focus') {
     navigateToPage('focus');
     if (focusTimerStatus !== 'running') {
@@ -599,6 +706,8 @@ function renderKeyboardShortcuts(query = '') {
 function showToast(message, isError = false) {
   window.clearTimeout(toastTimeout);
   taskToast.textContent = message;
+  taskToast.setAttribute('role', isError ? 'alert' : 'status');
+  taskToast.setAttribute('aria-live', isError ? 'assertive' : 'polite');
   taskToast.classList.toggle('toast--error', isError);
   taskToast.classList.add('toast--visible');
   toastTimeout = window.setTimeout(() => {
@@ -622,7 +731,7 @@ function loadRecentSearches() {
   }
   recentSearchesLoaded = true;
   try {
-    const stored = window.localStorage.getItem(recentSearchStorageKey);
+    const stored = window.localStorage.getItem(profileStorageKey(recentSearchStorageKey));
     const parsed = stored ? JSON.parse(stored) : [];
     recentSearches = window.taskForgeSearch.normalizeRecentSearches(parsed);
   } catch (error) {
@@ -639,7 +748,7 @@ function saveRecentSearch(query) {
   }
   recentSearches = nextSearches;
   try {
-    window.localStorage.setItem(recentSearchStorageKey, JSON.stringify(recentSearches));
+    window.localStorage.setItem(profileStorageKey(recentSearchStorageKey), JSON.stringify(recentSearches));
   } catch (error) {
     recentSearchError = `Search worked, but recent history could not be saved: ${error.message}`;
   }
@@ -859,46 +968,189 @@ function scrollToSearchResult(selector) {
   });
 }
 
-function renderNotificationCenter(result) {
-  if (!result
-    || typeof result.enabled !== 'boolean'
-    || !Array.isArray(result.events)
-    || !result.events.every((event) => (
-      event
-      && typeof event.id === 'string'
-      && typeof event.category === 'string'
-      && typeof event.title === 'string'
-      && typeof event.body === 'string'
-      && Number.isFinite(event.at)
-      && typeof event.targetType === 'string'
-      && typeof event.targetId === 'string'
-    ))) {
-    throw new TypeError('Notification center returned invalid reminder data.');
+function isValidNotificationEvent(event) {
+  return Boolean(event)
+    && typeof event.id === 'string'
+    && typeof event.category === 'string'
+    && typeof event.title === 'string'
+    && typeof event.body === 'string'
+    && Number.isFinite(event.at)
+    && typeof event.targetType === 'string'
+    && typeof event.targetId === 'string'
+    && (event.targetDate === null || typeof event.targetDate === 'string');
+}
+
+function isValidInboxEntry(entry) {
+  return Boolean(entry)
+    && typeof entry.id === 'string'
+    && typeof entry.deliveredAt === 'string'
+    && (entry.readAt === null || typeof entry.readAt === 'string')
+    && isValidNotificationEvent(entry.event);
+}
+
+function updateNotificationIndicators() {
+  const count = notificationUnreadCount;
+  notificationCenterButton.setAttribute('aria-label',
+    count > 0 ? `Notifications (${count} unread)` : 'Notifications');
+  notificationCenterBadge.hidden = count === 0;
+  notificationCenterBadge.textContent = count > 99 ? '99+' : String(count);
+  notificationCenterDot.hidden = count > 0 || !appSettings.notificationsEnabled;
+  notificationRecentCount.hidden = count === 0;
+  notificationRecentCount.textContent = count > 99 ? '99+' : String(count);
+}
+
+function applyNotificationBadge(unreadCount) {
+  notificationUnreadCount = Number.isInteger(unreadCount) && unreadCount > 0 ? unreadCount : 0;
+  updateNotificationIndicators();
+}
+
+const notificationCategoryLabels = {
+  tasks: 'Task',
+  schedule: 'Activity',
+  habits: 'Habit',
+  goals: 'Goal',
+};
+
+function notificationQuickAction(target) {
+  if (target.targetType === 'task') {
+    const task = findTask(target.targetId);
+    return task && !task.completed && !task.skipped ? { kind: 'task', label: 'Complete' } : null;
   }
+  if (target.targetType === 'activity') {
+    const activity = activities.find((entry) => entry.id === target.targetId);
+    return activity && !activity.completed && !activity.skipped
+      ? { kind: 'activity', label: 'Complete' }
+      : null;
+  }
+  if (target.targetType === 'habit') {
+    const habit = habits.find((entry) => (
+      entry.id === target.targetId && entry.active && entry.archivedAt === null
+    ));
+    const today = getLocalDateKey(new Date());
+    const date = target.targetDate || today;
+    const completed = habit?.completionHistory.includes(date);
+    return habit && date === today && !completed ? { kind: 'habit', label: 'Mark done' } : null;
+  }
+  return null;
+}
+
+function snoozeUntilForPreset(preset) {
+  const now = new Date();
+  if (preset === '10m') return new Date(now.getTime() + 10 * 60 * 1000);
+  if (preset === '1h') return new Date(now.getTime() + 60 * 60 * 1000);
+  if (preset === 'tomorrow') {
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 9, 0, 0, 0);
+  }
+  return null;
+}
+
+function buildNotificationActions(target, { delivered = false, snoozable = true, snoozedUntil = null } = {}) {
+  const actions = makeElement('div', 'notification-center__actions');
+  const openButton = makeElement('button', 'notification-center__action', 'Open');
+  openButton.type = 'button';
+  openButton.dataset.notificationAction = 'open';
+  actions.append(openButton);
+  const quickAction = notificationQuickAction(target);
+  if (quickAction) {
+    const quickButton = makeElement('button', 'notification-center__action', quickAction.label);
+    quickButton.type = 'button';
+    quickButton.dataset.notificationAction = quickAction.kind;
+    actions.append(quickButton);
+  }
+  if (snoozedUntil) {
+    actions.append(
+      makeElement(
+        'span',
+        'notification-center__snoozed',
+        `Snoozed until ${notificationDateTimeFormatter.format(new Date(snoozedUntil))}`,
+      ),
+    );
+    const unsnooze = makeElement('button', 'notification-center__action', 'Unsnooze');
+    unsnooze.type = 'button';
+    unsnooze.dataset.notificationAction = 'unsnooze';
+    actions.append(unsnooze);
+  } else if (snoozable && (delivered || target.at <= Date.now())) {
+    const select = document.createElement('select');
+    select.className = 'notification-center__snooze';
+    select.setAttribute('aria-label', `Snooze ${target.title}`);
+    select.dataset.notificationSnooze = '';
+    select.append(
+      new Option('Snooze…', ''),
+      new Option('10 minutes', '10m'),
+      new Option('1 hour', '1h'),
+      new Option('Tomorrow 9:00', 'tomorrow'),
+    );
+    actions.append(select);
+  }
+  return actions;
+}
+
+function appendNotificationEntry(kind, entry, target, { delivered = false } = {}) {
+  const key = `${kind}:${entry.id}`;
+  notificationCenterItems.set(key, { kind, entry, target });
+  const item = makeElement('div', 'notification-center__item');
+  item.dataset.notificationKey = key;
+  if (delivered) {
+    item.classList.add('notification-center__item--delivered');
+    if (!entry.readAt) {
+      item.classList.add('notification-center__item--unread');
+    }
+  }
+  const header = makeElement('div', 'notification-center__item-header');
+  if (delivered && !entry.readAt) {
+    const dot = makeElement('span', 'notification-center__unread');
+    dot.setAttribute('aria-label', 'Unread');
+    header.append(dot);
+  }
+  header.append(
+    makeElement(
+      'span',
+      `notification-center__category notification-center__category--${target.category}`,
+      notificationCategoryLabels[target.category] || 'Reminder',
+    ),
+    makeElement('strong', 'notification-center__title', target.title),
+  );
+  item.append(header, makeElement('span', 'notification-center__body', target.body));
+  const time = makeElement(
+    'time',
+    'notification-center__time',
+    delivered
+      ? `Delivered ${notificationDateTimeFormatter.format(new Date(entry.deliveredAt))}`
+      : notificationDateTimeFormatter.format(new Date(target.at)),
+  );
+  time.dateTime = new Date(delivered ? entry.deliveredAt : target.at).toISOString();
+  item.append(time);
+  const snoozedUntil = notificationCenterState?.snoozes?.[target.id];
+  item.append(buildNotificationActions(target, {
+    delivered,
+    snoozable: delivered ? entry.snoozable !== false : true,
+    snoozedUntil: snoozedUntil && Date.parse(snoozedUntil) > Date.now() ? snoozedUntil : null,
+  }));
+  notificationCenterList.append(item);
+}
+
+function renderUpcomingNotifications(result) {
   const events = result.events;
-  notificationCenterEvents = events;
-  notificationCenterSummary.textContent = result?.enabled
+  notificationCenterSummary.textContent = result.enabled
     ? `${events.length} ${events.length === 1 ? 'reminder' : 'reminders'} scheduled in the next 7 days`
     : 'Desktop notifications are turned off.';
-  notificationCenterList.replaceChildren();
-
-  if (!result?.enabled || events.length === 0) {
+  if (!result.enabled || events.length === 0) {
     const empty = makeElement('div', 'notification-center__empty');
     empty.append(
       makeElement(
         'strong',
         '',
-        result?.enabled ? 'You’re all caught up' : 'Notifications are turned off',
+        result.enabled ? 'You’re all caught up' : 'Notifications are turned off',
       ),
       makeElement(
         'span',
         '',
-        result?.enabled
+        result.enabled
           ? 'Upcoming task, activity, habit, and goal reminders will appear here.'
           : 'Turn notifications back on in Settings to see upcoming reminders.',
       ),
     );
-    if (!result?.enabled) {
+    if (!result.enabled) {
       const settingsButton = makeElement('button', 'secondary-button', 'Open notification settings');
       settingsButton.type = 'button';
       settingsButton.dataset.notificationAction = 'settings';
@@ -907,33 +1159,121 @@ function renderNotificationCenter(result) {
     notificationCenterList.append(empty);
     return;
   }
+  events.forEach((event) => appendNotificationEntry('upcoming', event, event));
+}
 
-  const categoryLabels = {
-    tasks: 'Task',
-    schedule: 'Activity',
-    habits: 'Habit',
-    goals: 'Goal',
-  };
-  events.forEach((notification) => {
-    const item = makeElement('button', 'notification-center__item');
-    item.type = 'button';
-    item.dataset.notificationId = notification.id;
-    item.append(
-      makeElement(
-        'span',
-        `notification-center__category notification-center__category--${notification.category}`,
-        categoryLabels[notification.category] || 'Reminder',
-      ),
-      makeElement('strong', 'notification-center__title', notification.title),
-      makeElement('span', 'notification-center__body', notification.body),
-      makeElement(
-        'time',
-        'notification-center__time',
-        notificationDateTimeFormatter.format(new Date(notification.at)),
-      ),
+function renderRecentNotifications(result) {
+  const inbox = result.inbox;
+  notificationCenterSummary.textContent = inbox.length === 0
+    ? 'Reminders you receive will appear here.'
+    : `${inbox.length} delivered ${inbox.length === 1 ? 'reminder' : 'reminders'}`
+      + `${result.unreadCount > 0 ? ` · ${result.unreadCount} unread` : ''}`;
+  if (inbox.length === 0) {
+    const empty = makeElement('div', 'notification-center__empty');
+    empty.append(
+      makeElement('strong', '', 'No recent notifications'),
+      makeElement('span', '', 'Desktop reminders you receive will be listed here, newest first.'),
     );
-    notificationCenterList.append(item);
-  });
+    notificationCenterList.append(empty);
+    return;
+  }
+  inbox.forEach((entry) => appendNotificationEntry('inbox', entry, entry.event, { delivered: true }));
+}
+
+function renderNotificationCenter(result) {
+  if (!result
+    || typeof result.enabled !== 'boolean'
+    || !Array.isArray(result.events)
+    || !result.events.every(isValidNotificationEvent)
+    || !Array.isArray(result.inbox)
+    || !result.inbox.every(isValidInboxEntry)
+    || !Number.isInteger(result.unreadCount)
+    || result.unreadCount < 0
+    || !result.snoozes
+    || typeof result.snoozes !== 'object'
+    || Object.values(result.snoozes).some((value) => typeof value !== 'string')) {
+    throw new TypeError('Notification center returned invalid reminder data.');
+  }
+  notificationCenterState = result;
+  applyNotificationBadge(result.unreadCount);
+  for (const tab of notificationCenterTabs) {
+    const active = tab.dataset.notificationTab === notificationCenterTab;
+    tab.classList.toggle('notification-center__tab--active', active);
+    tab.setAttribute('aria-selected', String(active));
+  }
+  notificationCenterToolbar.hidden = notificationCenterTab !== 'recent' || result.inbox.length === 0;
+  notificationMarkAllRead.disabled = result.unreadCount === 0;
+  notificationCenterList.replaceChildren();
+  notificationCenterItems.clear();
+  if (notificationCenterTab === 'upcoming') {
+    renderUpcomingNotifications(result);
+  } else {
+    renderRecentNotifications(result);
+  }
+}
+
+async function refreshNotificationCenterState() {
+  if (!window.notificationApi?.list) {
+    return;
+  }
+  try {
+    renderNotificationCenter(await window.notificationApi.list());
+  } catch (error) {
+    showToast(`Could not load reminders: ${error.message}`, true);
+  }
+}
+
+async function markNotificationEntryRead(entryId) {
+  const result = await window.notificationApi.markRead([entryId]);
+  if (notificationCenterState) {
+    notificationCenterState = {
+      ...notificationCenterState,
+      inbox: result.inbox,
+      unreadCount: result.unreadCount,
+    };
+  }
+  applyNotificationBadge(result.unreadCount);
+}
+
+async function performNotificationAction(descriptor, action) {
+  const { kind, entry, target } = descriptor;
+  if (kind === 'inbox' && !entry.readAt) {
+    await markNotificationEntryRead(entry.id);
+  }
+  if (action === 'open') {
+    await openNotificationTarget(target);
+    return;
+  }
+  if (action === 'task') {
+    await updateTaskCompletion(target.targetId, true);
+  } else if (action === 'activity') {
+    await setActivityCompletion(target.targetId, true);
+  } else if (action === 'habit') {
+    const updated = await updateHabitData(() => window.habitApi.setCompletion(
+      target.targetId,
+      getLocalDateKey(new Date()),
+      true,
+    ));
+    if (updated) {
+      showToast('Habit marked complete.');
+    }
+  } else if (action === 'unsnooze') {
+    await window.notificationApi.unsnooze(target.id);
+    showToast('Reminder unsnoozed.');
+  }
+  if (notificationCenterDialog.open) {
+    await refreshNotificationCenterState();
+  }
+}
+
+async function snoozeNotification(eventId, preset) {
+  const until = snoozeUntilForPreset(preset);
+  if (!until) {
+    return;
+  }
+  await window.notificationApi.snooze(eventId, until.toISOString());
+  showToast(`Snoozed until ${notificationDateTimeFormatter.format(until)}.`);
+  await refreshNotificationCenterState();
 }
 
 async function openNotificationCenter() {
@@ -1164,7 +1504,7 @@ function openNativeDatePicker(picker) {
 
 function formatDateTime(dateValue) {
   const date = new Date(dateValue);
-  return `${formatDateParts(date)} · ${new Intl.DateTimeFormat(undefined, {
+  return `${readableDateFormatter.format(date)} · ${new Intl.DateTimeFormat(undefined, {
     hour: 'numeric',
     minute: '2-digit',
   }).format(date)}`;
@@ -1205,10 +1545,11 @@ function formatDuration(startTime, endTime) {
 }
 
 function formatScheduleDate(dateValue) {
-  return formatDateKey(dateValue);
+  return readableDateFormatter.format(parseLocalDate(dateValue));
 }
 
 function getActivityStatus(activity, now) {
+  if (activity.skipped) return 'skipped';
   if (activity.completed) {
     return 'completed';
   }
@@ -1242,9 +1583,16 @@ function createActivityRow(entry, compact = false) {
   const { activity, status } = entry;
   const row = makeElement(
     'article',
-    `schedule-entry schedule-entry--${status}${activity.completed ? ' schedule-entry--completed' : ''}${compact ? ' schedule-entry--compact' : ''}`,
+    `schedule-entry schedule-entry--${status}${activity.completed ? ' schedule-entry--completed' : ''}${compact ? ' schedule-entry--compact' : ' schedule-entry--selectable'}`,
   );
   row.dataset.activityId = activity.id;
+  if (!compact) {
+    const select = makeElement('input', 'activity-select');
+    select.type = 'checkbox';
+    select.checked = selectedActivityIds.has(activity.id);
+    select.setAttribute('aria-label', `Select ${activity.title}`);
+    row.append(select);
+  }
 
   const time = makeElement('div', 'schedule-entry__time');
   time.append(
@@ -1269,12 +1617,14 @@ function createActivityRow(entry, compact = false) {
     upcoming: 'UPCOMING',
     missed: 'MISSED',
     completed: 'COMPLETED',
+    skipped: 'SKIPPED',
   }[status];
   heading.append(openButton, makeElement('span', `schedule-status schedule-status--${status}`, statusLabel));
   content.append(heading);
 
   const meta = makeElement('div', 'schedule-entry__meta');
   meta.append(makeElement('span', '', formatDuration(activity.startTime, activity.endTime)));
+  if (activity.recurrence) meta.append(makeElement('span', 'task-status', recurrenceLabel(activity)));
   if (activity.category) {
     meta.append(makeElement('span', 'schedule-category', activity.category));
   }
@@ -1297,10 +1647,13 @@ function createActivityRow(entry, compact = false) {
     editButton.type = 'button';
     editButton.dataset.scheduleAction = 'edit';
     editButton.setAttribute('aria-label', `Edit ${activity.title}`);
-    const deleteButton = makeElement('button', 'task-action task-action--danger', 'Delete');
+    completeButton.disabled = Boolean(activity.skipped);
+    const deleteLabel = activity.recurrence ? (activity.skipped ? 'Restore' : 'Skip') : 'Delete';
+    const deleteButton = makeElement('button', 'task-action task-action--danger', deleteLabel);
     deleteButton.type = 'button';
     deleteButton.dataset.scheduleAction = 'delete';
-    deleteButton.setAttribute('aria-label', `Delete ${activity.title}`);
+    deleteButton.disabled = Boolean(activity.recurrence && activity.completed);
+    deleteButton.setAttribute('aria-label', `${deleteLabel} ${activity.title}`);
     actions.append(completeButton, editButton, deleteButton);
     row.append(actions);
   }
@@ -1309,8 +1662,8 @@ function createActivityRow(entry, compact = false) {
 
 function renderDashboardSchedule(now = new Date()) {
   const today = getLocalDateKey(now);
-  const entries = getScheduleEntries(today, now);
-  const todayActivities = activities.filter((activity) => activity.date === today);
+  const entries = getScheduleEntries(today, now).filter(({ activity }) => !activity.skipped);
+  const todayActivities = activities.filter((activity) => !activity.skipped && activity.date === today);
   const currentEntry = entries.find((entry) => entry.status === 'current');
   const nextEntry = entries.find((entry) => entry.status === 'next');
   const summaryParts = [];
@@ -1348,6 +1701,8 @@ function renderScheduleViews(force = false) {
     ...entries.map(({ activity, status }) => `${activity.id}:${status}:${activity.updatedAt}`),
     'today',
     ...todayEntries.map(({ activity, status }) => `${activity.id}:${status}:${activity.updatedAt}`),
+    'strip',
+    ...tasks.map((task) => `${task.id}:${task.updatedAt}`),
   ].join('|');
 
   if (force || signature !== scheduleRenderSignature) {
@@ -1361,6 +1716,8 @@ function renderScheduleViews(force = false) {
     } else {
       entries.forEach((entry) => scheduleTimeline.append(createActivityRow(entry)));
     }
+    renderScheduleTaskStrip();
+    renderScheduleBulkToolbar();
     renderDashboardSchedule(now);
     renderAnalytics();
   }
@@ -1370,10 +1727,10 @@ function renderScheduleViews(force = false) {
   if (renderedScheduleDate !== selectedScheduleDate) {
     renderedScheduleDate = selectedScheduleDate;
     elements.scheduleDatePicker.value = selectedScheduleDate;
-    elements.scheduleDateDisplay.value = formatScheduleDate(selectedScheduleDate);
+    elements.scheduleDateDisplay.value = formatDateKey(selectedScheduleDate);
     elements.scheduleDateDisplay.removeAttribute('aria-invalid');
   }
-  const count = activities.filter((activity) => activity.date === getLocalDateKey(now)).length;
+  const count = activities.filter((activity) => !activity.skipped && activity.date === getLocalDateKey(now)).length;
   elements.activityCount.textContent = String(count);
   elements.activityCount.hidden = count === 0;
 }
@@ -1383,7 +1740,7 @@ function formatDueDate(dateValue) {
     return 'No due date';
   }
 
-  return formatDateKey(dateValue);
+  return readableDateFormatter.format(parseLocalDate(dateValue));
 }
 
 function isDueToday(task) {
@@ -1411,8 +1768,12 @@ function createTaskCheckbox(task) {
   );
   checkbox.type = 'button';
   checkbox.dataset.action = 'toggle';
-  checkbox.setAttribute('aria-label', task.completed ? 'Mark task pending' : 'Mark task completed');
+  checkbox.setAttribute(
+    'aria-label',
+    task.completed ? `Mark “${task.title}” as pending` : `Mark “${task.title}” as completed`,
+  );
   checkbox.setAttribute('aria-pressed', String(task.completed));
+  checkbox.disabled = Boolean(task.skipped);
   if (task.completed) {
     checkbox.textContent = '✓';
   }
@@ -1425,6 +1786,14 @@ function createTaskRow(task, compact = false) {
     `managed-task${task.completed ? ' managed-task--completed' : ''}${compact ? ' managed-task--compact' : ''}`,
   );
   row.dataset.taskId = task.id;
+  row.draggable = true;
+  if (!compact) {
+    const select = makeElement('input', 'task-select');
+    select.type = 'checkbox';
+    select.checked = selectedTaskIds.has(task.id);
+    select.setAttribute('aria-label', `Select ${task.title}`);
+    row.append(select);
+  }
   row.append(createTaskCheckbox(task));
 
   const openButton = makeElement('button', 'managed-task__open');
@@ -1439,6 +1808,8 @@ function createTaskRow(task, compact = false) {
   }
   const due = makeElement('span', 'managed-task__due', formatDueDate(task.dueDate));
   meta.append(due);
+  if (task.recurrence) meta.append(makeElement('span', 'task-status', recurrenceLabel(task)));
+  row.classList.toggle('managed-task--skipped', Boolean(task.skipped));
   openButton.append(title, meta);
   row.append(openButton, createPriorityBadge(task.priority));
 
@@ -1448,10 +1819,12 @@ function createTaskRow(task, compact = false) {
     editButton.type = 'button';
     editButton.dataset.action = 'edit';
     editButton.setAttribute('aria-label', `Edit ${task.title}`);
-    const deleteButton = makeElement('button', 'task-action task-action--danger', 'Delete');
+    const deleteLabel = task.recurrence ? (task.skipped ? 'Restore' : 'Skip') : 'Delete';
+    const deleteButton = makeElement('button', 'task-action task-action--danger', deleteLabel);
     deleteButton.type = 'button';
     deleteButton.dataset.action = 'delete';
-    deleteButton.setAttribute('aria-label', `Delete ${task.title}`);
+    deleteButton.disabled = Boolean(task.recurrence && task.completed);
+    deleteButton.setAttribute('aria-label', `${deleteLabel} ${task.title}`);
     actions.append(editButton, deleteButton);
     row.append(actions);
   }
@@ -1466,8 +1839,10 @@ function createEmptyState(title, message) {
 }
 
 function matchesFilter(task) {
+  if (currentFilter === 'skipped') return Boolean(task.skipped);
+  if (currentFilter === 'recurring') return Boolean(task.recurrence);
   if (currentFilter === 'pending') {
-    return !task.completed;
+    return !task.completed && !task.skipped;
   }
   if (currentFilter === 'completed') {
     return task.completed;
@@ -1496,10 +1871,48 @@ function renderTaskList() {
   }
 
   visibleTasks.forEach((task) => managedTaskList.append(createTaskRow(task)));
+  renderTaskBulkToolbar();
+}
+
+function renderScheduleTaskStrip() {
+  const pending = tasks
+    .filter((task) => !task.completed && !task.skipped)
+    .sort((a, b) => (a.dueDate || '9999-12-31').localeCompare(b.dueDate || '9999-12-31')
+      || b.createdAt.localeCompare(a.createdAt));
+  scheduleTaskStripList.replaceChildren();
+  if (pending.length === 0) {
+    scheduleTaskStripList.append(createEmptyState(
+      'Nothing to schedule',
+      'Pending tasks appear here, ready to drag onto the timeline.',
+    ));
+    return;
+  }
+  pending.forEach((task) => scheduleTaskStripList.append(createTaskRow(task, true)));
+}
+
+function pruneSelection(selection, rows) {
+  const ids = new Set(rows.map((row) => row.id));
+  for (const id of selection) {
+    if (!ids.has(id)) selection.delete(id);
+  }
+}
+
+function renderTaskBulkToolbar() {
+  pruneSelection(selectedTaskIds, tasks);
+  const count = selectedTaskIds.size;
+  taskBulkCount.textContent = `${count} selected`;
+  taskBulkToolbar.hidden = count === 0;
+}
+
+function renderScheduleBulkToolbar() {
+  pruneSelection(selectedActivityIds, activities);
+  const count = selectedActivityIds.size;
+  scheduleBulkCount.textContent = `${count} selected`;
+  scheduleBulkToolbar.hidden = count === 0;
 }
 
 function renderTodayTasks() {
-  const todaysTasks = tasks.filter(isDueToday).sort((a, b) => {
+  const todaysTasks = tasks.filter((task) => !task.skipped && isDueToday(task)).sort((a, b) => {
     return Number(a.completed) - Number(b.completed) || b.createdAt.localeCompare(a.createdAt);
   });
 
@@ -1517,11 +1930,12 @@ function renderTodayTasks() {
 }
 
 function renderDashboardStats() {
-  const completed = tasks.filter((task) => task.completed).length;
-  const pending = tasks.length - completed;
-  const productivity = tasks.length === 0 ? 0 : Math.round((completed / tasks.length) * 100);
+  const activeTasks = tasks.filter((task) => !task.skipped);
+  const completed = activeTasks.filter((task) => task.completed).length;
+  const pending = activeTasks.length - completed;
+  const productivity = activeTasks.length === 0 ? 0 : Math.round((completed / activeTasks.length) * 100);
 
-  elements.total.textContent = String(tasks.length);
+  elements.total.textContent = String(activeTasks.length);
   elements.completed.textContent = String(completed);
   elements.pending.textContent = String(pending);
   elements.productivity.textContent = String(productivity);
@@ -1536,6 +1950,7 @@ function renderTasks() {
   renderDashboardStats();
   renderTodayTasks();
   renderTaskList();
+  renderScheduleTaskStrip();
   renderAnalytics();
 }
 
@@ -1637,54 +2052,20 @@ function renderAnalytics() {
   const now = new Date();
   const today = getLocalDateKey(now);
   const weekDates = getCurrentWeekDates(now);
-  const lastDay = getLocalDateKey(weekDates[6]);
-  const weekDateSet = new Set(weekDates.map(getLocalDateKey));
-  const taskWeekCounts = new Map(weekDates.map((date) => [getLocalDateKey(date), 0]));
-  const weeklyTaskPool = new Set();
-  let todayTaskCount = 0;
-  let tasksCompletedToday = 0;
-  let completedTodayTasksCreatedToday = 0;
-  let pendingTasks = 0;
-  let weeklyCompletedTaskCount = 0;
-  for (const task of tasks) {
-    const createdDate = getTimestampDateKey(task.createdAt);
-    const completedDate = getTimestampDateKey(task.completedAt);
-    if (createdDate === today) {
-      todayTaskCount += 1;
-      if (completedDate === today) {
-        completedTodayTasksCreatedToday += 1;
-      }
-    }
-    if (completedDate === today) {
-      tasksCompletedToday += 1;
-    }
-    if (!task.completed) {
-      pendingTasks += 1;
-    }
-    if (completedDate && weekDateSet.has(completedDate)) {
-      weeklyCompletedTaskCount += 1;
-      weeklyTaskPool.add(task.id);
-      taskWeekCounts.set(completedDate, taskWeekCounts.get(completedDate) + 1);
-    }
-    if (!task.completed && createdDate && createdDate <= lastDay) {
-      weeklyTaskPool.add(task.id);
-    }
-  }
-  let todayActivityCount = 0;
-  let activitiesCompletedToday = 0;
-  let completedScheduledToday = 0;
-  for (const activity of activities) {
-    const completedDate = getTimestampDateKey(activity.completedAt);
-    if (activity.date === today) {
-      todayActivityCount += 1;
-      if (completedDate === today) {
-        completedScheduledToday += 1;
-      }
-    }
-    if (completedDate === today) {
-      activitiesCompletedToday += 1;
-    }
-  }
+  const {
+    todayTaskCount,
+    tasksCompletedToday,
+    completedTodayTasksCreatedToday,
+    pendingTasks,
+    weeklyCompletedTaskCount,
+    weeklyTaskPoolSize,
+    taskWeekCounts,
+  } = window.taskForgeAnalytics.summarizeTaskAnalytics(tasks, { today, weekDates });
+  const {
+    todayActivityCount,
+    activitiesCompletedToday,
+    completedScheduledToday,
+  } = window.taskForgeAnalytics.summarizeActivityAnalytics(activities, { today });
   const focusIsToday = focusStats.todayDate === today;
   const focusSessionsToday = focusIsToday ? focusStats.todayCompletedSessions : 0;
   const focusMinutesToday = focusIsToday ? focusStats.todayFocusMinutes : 0;
@@ -1711,7 +2092,7 @@ function renderAnalytics() {
   elements.analyticsScoreDescription.textContent = scoreComponents.length > 0
     ? `Today's score averages ${scoreComponents.length} applicable progress measure${scoreComponents.length === 1 ? '' : 's'}.`
     : 'No activity recorded today yet. Your score will appear as you use TaskForge.';
-  elements.analyticsTodayDate.textContent = formatDateParts(now);
+  elements.analyticsTodayDate.textContent = readableDateFormatter.format(now);
   elements.dailyAnalyticsMetrics.replaceChildren(
     createAnalyticsMetric('Tasks created today', todayTaskCount, 'Added on this calendar day'),
     createAnalyticsMetric('Tasks completed today', tasksCompletedToday, 'Completion actions recorded today'),
@@ -1737,16 +2118,16 @@ function renderAnalytics() {
     return {
       date,
       label: weekdayShortFormatter.format(date),
-      value: taskWeekCounts.get(dateKey),
+      value: taskWeekCounts[dateKey] ?? 0,
     };
   });
   const weeklyFocusMinutes = focusWeek.reduce((sum, day) => sum + day.value, 0);
   const weeklySessions = focusWeek.reduce((sum, day) => sum + day.sessions, 0);
-  const weeklyTaskRate = weeklyTaskPool.size > 0
-    ? Math.round((weeklyCompletedTaskCount / weeklyTaskPool.size) * 100)
+  const weeklyTaskRate = weeklyTaskPoolSize > 0
+    ? Math.round((weeklyCompletedTaskCount / weeklyTaskPoolSize) * 100)
     : 0;
   elements.analyticsWeekPeriod.textContent =
-    `${formatDateParts(weekDates[0])} – ${formatDateParts(weekDates[6])}`;
+    `${readableDateFormatter.format(weekDates[0])} – ${readableDateFormatter.format(weekDates[6])}`;
   elements.weeklyFocusTotal.textContent = `${weeklyFocusMinutes} min`;
   elements.weeklyFocusSessions.textContent = String(weeklySessions);
   elements.weeklyTaskRate.textContent = `${weeklyTaskRate}%`;
@@ -1939,7 +2320,7 @@ function renderHabitPage() {
   const summary = selectedHabitAnalytics;
   selectedDateInput.value = selectedHabitDate;
   document.querySelector('#habit-selected-date-label').textContent =
-    `${formatDateParts(parseLocalDate(selectedHabitDate))} · ${weekdayFormatter.format(parseLocalDate(selectedHabitDate))}`;
+    `${weekdayFormatter.format(parseLocalDate(selectedHabitDate))} · ${readableDateFormatter.format(parseLocalDate(selectedHabitDate))}`;
   if (summary) {
     const due = summary.today.due;
     const completed = summary.today.completed;
@@ -2225,8 +2606,10 @@ async function updateHabitData(operation) {
   try {
     habits = await operation();
     await refreshHabitAnalytics();
+    return true;
   } catch (error) {
     showToast(`Could not update habit: ${error.message}`, true);
+    return false;
   }
 }
 
@@ -2496,7 +2879,7 @@ function applyAppSettings() {
   for (const [selector, setting] of Object.entries(reminderTimingControls)) {
     document.querySelector(`#${selector}`).value = String(appSettings.reminderTiming[setting]);
   }
-  document.querySelector('#notification-button-dot').hidden = !appSettings.notificationsEnabled;
+  updateNotificationIndicators();
   const themeColors = {
     dark: '#11141b',
     light: '#f3f5f9',
@@ -2712,6 +3095,55 @@ async function exportApplicationBackup() {
   }
 }
 
+async function exportWorkspace(kind) {
+  const configs = {
+    calendar: {
+      button: '#export-calendar',
+      request: () => window.exportApi.calendar(),
+      success: (result) => `Exported ${result.counts.activities} activities and ${result.counts.tasks} dated tasks to ${result.fileName}.`,
+    },
+    tasks: {
+      button: '#export-tasks-csv',
+      request: () => window.exportApi.tasksCsv(),
+      success: (result) => `Exported ${result.count} tasks to ${result.fileName}.`,
+    },
+    activities: {
+      button: '#export-activities-csv',
+      request: () => window.exportApi.activitiesCsv(),
+      success: (result) => `Exported ${result.count} schedule items to ${result.fileName}.`,
+    },
+  };
+  const config = configs[kind];
+  const status = document.querySelector('#export-status');
+  const errorMessage = document.querySelector('#export-error');
+  if (!window.exportApi) {
+    status.textContent = 'Export is available in the TaskForge desktop app.';
+    return;
+  }
+  const buttons = ['#export-calendar', '#export-tasks-csv', '#export-activities-csv']
+    .map((selector) => document.querySelector(selector));
+  for (const button of buttons) button.disabled = true;
+  errorMessage.hidden = true;
+  status.textContent = 'Preparing export…';
+  try {
+    const result = await config.request();
+    if (result.canceled) {
+      status.textContent = 'Export canceled.';
+      return;
+    }
+    const message = config.success(result);
+    status.textContent = message;
+    showToast(message);
+  } catch (error) {
+    status.textContent = 'The export could not be completed.';
+    errorMessage.textContent = `Could not export: ${error.message}`;
+    errorMessage.hidden = false;
+    showToast(`Could not export: ${error.message}`, true);
+  } finally {
+    for (const button of buttons) button.disabled = false;
+  }
+}
+
 async function restoreApplicationBackup() {
   const button = document.querySelector('#restore-backup');
   const errorMessage = document.querySelector('#data-management-error');
@@ -2752,7 +3184,8 @@ async function restoreApplicationBackup() {
 }
 
 async function resetApplicationData() {
-  if (!window.confirm('Reset all TaskForge data? Tasks, schedules, habits, goals, focus statistics, and preferences will be permanently deleted.')) {
+  const profileName = profileState.activeProfile?.name ?? 'this profile';
+  if (!window.confirm(`Reset ${profileName}? Tasks, schedules, habits, goals, focus statistics, and preferences in this profile will be permanently deleted. Other profiles are not affected.`)) {
     return;
   }
   const resetButton = document.querySelector('#reset-application-data');
@@ -2802,7 +3235,7 @@ async function resetApplicationData() {
     renderHabitPage();
     renderGoalPage();
     renderAnalytics();
-    showToast('Application data and preferences were reset.');
+    showToast('This profile’s data and preferences were reset.');
   } catch (error) {
     showToast(`Could not reset application data: ${error.message}`, true);
   } finally {
@@ -2811,6 +3244,9 @@ async function resetApplicationData() {
 }
 
 async function handleFocusTimerFinished(result) {
+  if (workspaceLocked || (result.profileId && result.profileId !== profileState.activeProfileId)) {
+    return;
+  }
   if (result.stats) {
     focusStats = result.stats;
   } else {
@@ -2838,20 +3274,175 @@ async function handleFocusTimerFinished(result) {
   renderFocusTimer();
 }
 
+function recurrenceLabel(item) {
+  if (!item.recurrence) return '';
+  const rule = item.recurrence;
+  const units = { daily: 'day', weekly: 'week', monthly: 'month' };
+  return `${rule.ended ? 'Ended series' : `Every ${rule.interval} ${units[rule.frequency]}${rule.interval === 1 ? '' : 's'}`}${item.skipped ? ' · Skipped' : ''}`;
+}
+
+const recurrenceForms = {};
+for (const kind of ['task', 'activity']) {
+  const container = document.getElementById(`${kind}-recurrence`);
+  const controls = {};
+  function field(key, title, options, type = 'number') {
+    const label = makeElement('label', 'form-field');
+    const control = document.createElement(options ? 'select' : 'input');
+    control.id = `${kind}-repeat-${key}`;
+    if (options) {
+      for (const [value, text] of options) {
+        const option = makeElement('option', '', text);
+        option.value = value;
+        control.append(option);
+      }
+    } else {
+      control.type = type;
+    }
+    label.append(makeElement('span', '', title), control);
+    controls[key] = control;
+    container.append(label);
+    return label;
+  }
+  const scopeLabel = field('scope', 'Apply changes to', [
+    ['occurrence', 'Only this occurrence'], ['series', 'This and future unfinished occurrences'],
+  ]);
+  field('preset', 'Repeats', [
+    ['none', 'Does not repeat'], ['daily', 'Daily'], ['weekly', 'Weekly'],
+    ['monthly', 'Monthly'], ['custom', 'Custom interval'],
+  ]);
+  const custom = makeElement('div', 'form-row');
+  custom.append(field('interval', 'Every', null), field('frequency', 'Unit', [
+    ['daily', 'Days'], ['weekly', 'Weeks'], ['monthly', 'Months'],
+  ]));
+  controls.interval.min = '1';
+  controls.interval.max = '365';
+  container.append(custom);
+  const weekdays = makeElement('fieldset', 'recurrence-weekdays');
+  weekdays.append(makeElement('legend', '', 'On weekdays'));
+  controls.weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((name, index) => {
+    const label = makeElement('label', '');
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.value = String(index);
+    input.id = `${kind}-repeat-day-${index}`;
+    label.append(input, document.createTextNode(name));
+    weekdays.append(label);
+    return input;
+  });
+  container.append(weekdays);
+  const endModeLabel = field('endMode', 'Ends', [['count', 'After a number of occurrences'], ['until', 'On a date (inclusive)']]);
+  const countLabel = field('count', 'Occurrences in this segment (1–1,000)', null);
+  controls.count.min = '1';
+  controls.count.max = '1000';
+  const untilLabel = field('until', 'Last date (within 5 years)', null, 'date');
+  const hint = makeElement('p', 'form-hint');
+  container.append(hint);
+  controls.refresh = () => {
+    const existing = Boolean(container.dataset.recurring);
+    const single = existing && controls.scope.value === 'occurrence';
+    const repeats = controls.preset.value !== 'none';
+    const frequency = controls.preset.value === 'custom' ? controls.frequency.value : controls.preset.value;
+    scopeLabel.hidden = !existing;
+    controls.preset.disabled = single;
+    controls.preset.querySelector('[value="none"]').disabled = existing;
+    custom.hidden = !repeats || controls.preset.value !== 'custom';
+    weekdays.hidden = !repeats || frequency !== 'weekly';
+    endModeLabel.hidden = !repeats;
+    countLabel.hidden = !repeats || controls.endMode.value !== 'count';
+    untilLabel.hidden = !repeats || controls.endMode.value !== 'until';
+    hint.hidden = !repeats;
+    for (const key of ['interval', 'frequency', 'endMode', 'count', 'until']) controls[key].disabled = single;
+    controls.weekdays.forEach((input) => { input.disabled = single; });
+    hint.textContent = single
+      ? 'The repeat rule stays unchanged. Completed, skipped, and ended occurrences can only be edited individually.'
+      : 'Choose a start date above. Up to 1,000 occurrences per series; monthly dates missing from a month are skipped. Future edits preserve completed, skipped, and earlier history. Reminders keep local clock time.';
+  };
+  container.addEventListener('change', controls.refresh);
+  recurrenceForms[kind] = controls;
+}
+
+function openRecurrenceForm(kind, item) {
+  const controls = recurrenceForms[kind];
+  const rule = item?.recurrence;
+  document.getElementById(`${kind}-recurrence`).dataset.recurring = rule ? 'true' : '';
+  controls.scope.value = 'occurrence';
+  controls.scope.querySelector('[value="series"]').disabled = Boolean(rule?.ended || item?.completed || item?.skipped);
+  controls.preset.value = rule ? (rule.interval === 1 ? rule.frequency : 'custom') : 'none';
+  controls.frequency.value = rule?.frequency || 'daily';
+  controls.interval.value = String(rule?.interval || 1);
+  controls.endMode.value = rule?.until ? 'until' : 'count';
+  const records = kind === 'task' ? tasks : activities;
+  controls.count.value = rule ? String(Math.max(1, records.filter((record) =>
+    record.recurrence?.seriesId === rule.seriesId && record.recurrence.occurrenceDate >= rule.occurrenceDate
+      && !record.completed && !record.skipped).length)) : '30';
+  controls.until.value = rule?.until || '';
+  const date = item?.dueDate || item?.date || selectedScheduleDate || getLocalDateKey(new Date());
+  const selectedDays = rule?.weekdays?.length ? rule.weekdays : [parseLocalDate(date).getDay()];
+  controls.weekdays.forEach((input) => { input.checked = selectedDays.includes(Number(input.value)); });
+  controls.refresh();
+}
+
+function getRecurrenceInput(kind) {
+  const controls = recurrenceForms[kind];
+  if (controls.preset.value === 'none') return null;
+  const frequency = controls.preset.value === 'custom' ? controls.frequency.value : controls.preset.value;
+  return {
+    frequency,
+    interval: controls.preset.value === 'custom' ? Number(controls.interval.value) : 1,
+    weekdays: frequency === 'weekly' ? controls.weekdays.filter((input) => input.checked).map((input) => Number(input.value)) : [],
+    count: controls.endMode.value === 'count' ? Number(controls.count.value) : null,
+    until: controls.endMode.value === 'until' ? controls.until.value : null,
+  };
+}
+
+function configureOccurrenceDetails(kind, item, meta, toggle) {
+  if (item.recurrence) meta.append(makeElement('span', 'task-status', recurrenceLabel(item)));
+  toggle.disabled = Boolean(item.skipped);
+  const deleteButton = document.getElementById(`delete-${kind}-button`);
+  deleteButton.textContent = item.recurrence ? (item.skipped ? 'Restore occurrence' : 'Skip occurrence') : `Delete ${kind}`;
+  deleteButton.disabled = Boolean(item.recurrence && item.completed);
+  const endButton = document.getElementById(`end-${kind}-series`);
+  endButton.hidden = !item.recurrence || Boolean(item.recurrence.ended);
+  endButton.parentElement.hidden = endButton.hidden;
+}
+
+async function endRecurringSeries(kind, id) {
+  const item = kind === 'task' ? findTask(id) : findActivity(id);
+  if (!item?.recurrence || !window.confirm(`End “${item.title}” after this occurrence? Later unfinished occurrences will be removed. Completed and skipped history will remain.`)) return;
+  try {
+    if (kind === 'task') {
+      tasks = await window.taskApi.endSeries(id);
+      detailsDialog.close();
+      renderTasks();
+    } else {
+      activities = await window.scheduleApi.endSeries(id);
+      activityDetailsDialog.close();
+      renderScheduleViews(true);
+    }
+    showToast('Series ended. This occurrence and history were kept.');
+  } catch (error) {
+    showToast(`Could not end series: ${error.message}`, true);
+  }
+}
+
+document.getElementById('end-task-series').addEventListener('click', () => endRecurringSeries('task', selectedTaskId));
+document.getElementById('end-activity-series').addEventListener('click', () => endRecurringSeries('activity', selectedActivityId));
+
 function findActivity(id) {
   return activities.find((activity) => activity.id === id);
 }
 
-function openActivityForm(activity = null) {
+function openActivityForm(activity = null, prefill = null) {
   editingActivityId = activity ? activity.id : null;
-  elements.activityFormTitle.textContent = activity ? 'Edit activity' : 'Add activity';
-  elements.activitySaveButton.textContent = activity ? 'Save changes' : 'Add activity';
-  elements.activityTitleInput.value = activity ? activity.title : '';
-  elements.activityDescriptionInput.value = activity ? activity.description : '';
+  const seed = activity || prefill;
+  elements.activityFormTitle.textContent = activity ? 'Edit activity' : prefill ? 'Schedule task' : 'Add activity';
+  elements.activitySaveButton.textContent = activity ? 'Save changes' : prefill ? 'Add to schedule' : 'Add activity';
+  elements.activityTitleInput.value = seed ? seed.title : '';
+  elements.activityDescriptionInput.value = seed ? seed.description : '';
   setPopupDate(
     elements.activityDateInput,
     elements.activityDateDisplay,
-    activity ? activity.date : selectedScheduleDate,
+    seed ? seed.date : selectedScheduleDate,
   );
   elements.activityCategoryInput.value = activity ? activity.category : '';
   elements.activityStartInput.value = activity ? activity.startTime : '09:00';
@@ -2862,6 +3453,7 @@ function openActivityForm(activity = null) {
       : String(activity.reminderMinutesBefore);
   elements.activityFormError.hidden = true;
   elements.activityFormError.textContent = '';
+  openRecurrenceForm('activity', activity);
   activityDialog.showModal();
   elements.activityTitleInput.focus();
 }
@@ -2873,7 +3465,7 @@ function openActivityDetails(activity) {
     makeElement('span', 'schedule-detail-time',
       `${formatScheduleDate(activity.date)} · ${formatScheduleTime(activity.startTime)}–${formatScheduleTime(activity.endTime)}`),
     makeElement('span', 'task-status', formatDuration(activity.startTime, activity.endTime)),
-    makeElement('span', 'task-status', activity.completed ? 'Completed' : 'Pending'),
+    makeElement('span', 'task-status', activity.skipped ? 'Skipped' : activity.completed ? 'Completed' : 'Pending'),
   );
   if (activity.category) {
     elements.activityDetailMeta.append(makeElement('span', 'schedule-category', activity.category));
@@ -2881,6 +3473,7 @@ function openActivityDetails(activity) {
   elements.activityDetailDescription.textContent = activity.description || 'No description provided.';
   elements.activityDetailCreated.textContent = `Created ${formatDateTime(activity.createdAt)}`;
   elements.activityDetailToggle.textContent = activity.completed ? 'Reopen activity' : 'Mark completed';
+  configureOccurrenceDetails('activity', activity, elements.activityDetailMeta, elements.activityDetailToggle);
   activityDetailsDialog.showModal();
 }
 
@@ -2894,6 +3487,7 @@ function getActivityFormData() {
     startTime: elements.activityStartInput.value,
     endTime: elements.activityEndInput.value,
     reminderMinutesBefore: reminderMinutes === '' ? null : Number(reminderMinutes),
+    recurrence: getRecurrenceInput('activity'),
   };
 }
 
@@ -2911,15 +3505,16 @@ function validateActivityForm(input) {
 }
 
 function formatOverlapConfirmation(overlaps) {
-  const descriptions = overlaps.map((activity) => (
-    `• ${activity.title} (${formatScheduleTime(activity.startTime)}–${formatScheduleTime(activity.endTime)})`
+  const descriptions = overlaps.slice(0, 8).map((activity) => (
+    `${activity.title} — ${formatScheduleDate(activity.date)} (${formatScheduleTime(activity.startTime)}–${formatScheduleTime(activity.endTime)})`
   ));
-  return `This activity overlaps with:\n${descriptions.join('\n')}\n\nSave it anyway?`;
+  const remaining = overlaps.length > 8 ? `\n… and ${overlaps.length - 8} more.` : '';
+  return `These occurrences overlap with:\n${descriptions.join('\n')}${remaining}\n\nSave anyway?`;
 }
 
 async function saveActivity(input, allowOverlap) {
   return editingActivityId
-    ? window.scheduleApi.update(editingActivityId, input, allowOverlap)
+    ? window.scheduleApi.update(editingActivityId, input, allowOverlap, recurrenceForms.activity.scope.value)
     : window.scheduleApi.add(input, allowOverlap);
 }
 
@@ -2955,20 +3550,22 @@ async function setActivityCompletion(id, completed) {
 
 async function deleteActivity(id) {
   const activity = findActivity(id);
-  if (!activity || !window.confirm(`Delete “${activity.title}”? This cannot be undone.`)) {
-    return;
-  }
+  if (!activity) return;
+  const action = activity.recurrence ? (activity.skipped ? 'Restore occurrence' : 'Skip occurrence') : 'Delete activity';
+  if (!window.confirm(`${action} “${activity.title}”? ${activity.recurrence ? 'Other occurrences stay unchanged.' : 'You can undo this with Ctrl+Z.'}`)) return;
 
   try {
-    activities = await window.scheduleApi.delete(id);
+    activities = activity.recurrence
+      ? await window.scheduleApi.skip(id, !activity.skipped)
+      : await window.scheduleApi.delete(id);
     scheduleRenderSignature = '';
     renderScheduleViews(true);
     if (activityDetailsDialog.open) {
       activityDetailsDialog.close();
     }
-    showToast('Activity deleted.');
+    showToast(activity.recurrence ? (activity.skipped ? 'Occurrence restored.' : 'Occurrence skipped.') : 'Activity deleted.');
   } catch (error) {
-    showToast(`Could not delete activity: ${error.message}`, true);
+    showToast(`Could not change activity: ${error.message}`, true);
   }
 }
 
@@ -2994,6 +3591,308 @@ async function handleScheduleAction(event) {
   }
 }
 
+function applyUndoState(state) {
+  undoState = state;
+  undoButton.disabled = workspaceLocked || !state.canUndo;
+  redoButton.disabled = workspaceLocked || !state.canRedo;
+  undoButton.title = state.canUndo ? `Undo: ${state.undoLabel} (Ctrl+Z)` : 'Nothing to undo (Ctrl+Z)';
+  redoButton.title = state.canRedo ? `Redo: ${state.redoLabel} (Ctrl+Y)` : 'Nothing to redo (Ctrl+Y)';
+  undoButton.setAttribute('aria-label', state.canUndo ? `Undo: ${state.undoLabel}` : 'Undo');
+  redoButton.setAttribute('aria-label', state.canRedo ? `Redo: ${state.redoLabel}` : 'Redo');
+}
+
+function applyUndoResult(result, verb) {
+  if (result.kind === 'tasks') {
+    tasks = result.rows;
+    renderTasks();
+  } else {
+    activities = result.rows;
+    scheduleRenderSignature = '';
+    renderScheduleViews(true);
+  }
+  applyUndoState(result);
+  showToast(`${verb}: ${result.label}.`);
+}
+
+async function undoLastChange() {
+  try {
+    applyUndoResult(await window.undoApi.undo(), 'Undid');
+  } catch (error) {
+    showToast(`Could not undo: ${error.message}`, true);
+    applyUndoState(await window.undoApi.state().catch(() => undoState));
+  }
+}
+
+async function redoLastChange() {
+  try {
+    applyUndoResult(await window.undoApi.redo(), 'Redid');
+  } catch (error) {
+    showToast(`Could not redo: ${error.message}`, true);
+    applyUndoState(await window.undoApi.state().catch(() => undoState));
+  }
+}
+
+undoButton.addEventListener('click', undoLastChange);
+redoButton.addEventListener('click', redoLastChange);
+const unsubscribeUndoState = window.undoApi?.onState(applyUndoState) ?? (() => {});
+
+async function bulkCompleteTasks() {
+  const ids = [...selectedTaskIds];
+  if (ids.length === 0) return;
+  try {
+    tasks = await window.taskApi.bulkComplete(ids, true);
+    selectedTaskIds.clear();
+    renderTasks();
+    showToast(`${ids.length} ${ids.length === 1 ? 'task' : 'tasks'} completed.`);
+  } catch (error) {
+    showToast(`Could not complete tasks: ${error.message}`, true);
+  }
+}
+
+async function bulkDeleteTasks() {
+  const ids = [...selectedTaskIds];
+  if (ids.length === 0) return;
+  const recurring = ids.map(findTask).filter((task) => task?.recurrence).length;
+  const note = recurring > 0
+    ? ` ${recurring} recurring ${recurring === 1 ? 'occurrence' : 'occurrences'} will be skipped instead of deleted.`
+    : '';
+  if (!window.confirm(`Delete ${ids.length} selected ${ids.length === 1 ? 'task' : 'tasks'}?${note} You can undo this with Ctrl+Z.`)) return;
+  try {
+    tasks = await window.taskApi.bulkDelete(ids);
+    selectedTaskIds.clear();
+    renderTasks();
+    showToast('Selected tasks deleted.');
+  } catch (error) {
+    showToast(`Could not delete tasks: ${error.message}`, true);
+  }
+}
+
+async function bulkCompleteActivities() {
+  const ids = [...selectedActivityIds];
+  if (ids.length === 0) return;
+  try {
+    activities = await window.scheduleApi.bulkComplete(ids, true);
+    selectedActivityIds.clear();
+    scheduleRenderSignature = '';
+    renderScheduleViews(true);
+    showToast(`${ids.length} ${ids.length === 1 ? 'activity' : 'activities'} completed.`);
+  } catch (error) {
+    showToast(`Could not complete activities: ${error.message}`, true);
+  }
+}
+
+async function bulkDeleteActivities() {
+  const ids = [...selectedActivityIds];
+  if (ids.length === 0) return;
+  const recurring = ids.map(findActivity).filter((activity) => activity?.recurrence).length;
+  const note = recurring > 0
+    ? ` ${recurring} recurring ${recurring === 1 ? 'occurrence' : 'occurrences'} will be skipped instead of deleted.`
+    : '';
+  if (!window.confirm(`Delete ${ids.length} selected ${ids.length === 1 ? 'activity' : 'activities'}?${note} You can undo this with Ctrl+Z.`)) return;
+  try {
+    activities = await window.scheduleApi.bulkDelete(ids);
+    selectedActivityIds.clear();
+    scheduleRenderSignature = '';
+    renderScheduleViews(true);
+    showToast('Selected activities deleted.');
+  } catch (error) {
+    showToast(`Could not delete activities: ${error.message}`, true);
+  }
+}
+
+function openBulkReschedule() {
+  if (selectedTaskIds.size === 0) return;
+  const count = selectedTaskIds.size;
+  bulkRescheduleSummary.textContent = `${count} ${count === 1 ? 'task' : 'tasks'} selected.`;
+  setPopupDate(bulkRescheduleDate, bulkRescheduleDateDisplay, '');
+  bulkRescheduleError.hidden = true;
+  bulkRescheduleError.textContent = '';
+  bulkRescheduleDialog.showModal();
+  bulkRescheduleDateDisplay.focus();
+}
+
+document.querySelector('#bulk-complete-tasks').addEventListener('click', bulkCompleteTasks);
+document.querySelector('#bulk-delete-tasks').addEventListener('click', bulkDeleteTasks);
+document.querySelector('#bulk-reschedule-tasks').addEventListener('click', openBulkReschedule);
+document.querySelector('#bulk-clear-tasks').addEventListener('click', () => {
+  selectedTaskIds.clear();
+  renderTaskList();
+});
+document.querySelector('#bulk-complete-activities').addEventListener('click', bulkCompleteActivities);
+document.querySelector('#bulk-delete-activities').addEventListener('click', bulkDeleteActivities);
+document.querySelector('#bulk-clear-activities').addEventListener('click', () => {
+  selectedActivityIds.clear();
+  scheduleRenderSignature = '';
+  renderScheduleViews(true);
+});
+for (const id of ['close-bulk-reschedule', 'cancel-bulk-reschedule']) {
+  document.getElementById(id).addEventListener('click', () => bulkRescheduleDialog.close());
+}
+bulkRescheduleForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (bulkRescheduleSave.disabled) return;
+  if (!isPopupDateValid(bulkRescheduleDateDisplay, bulkRescheduleDate, true)) {
+    bulkRescheduleError.textContent = 'Enter a valid date as DD/MM/YYYY, or leave it empty.';
+    bulkRescheduleError.hidden = false;
+    bulkRescheduleDateDisplay.focus();
+    return;
+  }
+  const ids = [...selectedTaskIds];
+  if (ids.length === 0) {
+    bulkRescheduleDialog.close();
+    return;
+  }
+  bulkRescheduleSave.disabled = true;
+  try {
+    tasks = await window.taskApi.bulkReschedule(ids, bulkRescheduleDate.value || null);
+    selectedTaskIds.clear();
+    bulkRescheduleDialog.close();
+    renderTasks();
+    showToast(`${ids.length} ${ids.length === 1 ? 'task' : 'tasks'} rescheduled.`);
+  } catch (error) {
+    bulkRescheduleError.textContent = `Could not reschedule: ${error.message}`;
+    bulkRescheduleError.hidden = false;
+  } finally {
+    bulkRescheduleSave.disabled = false;
+  }
+});
+
+managedTaskList.addEventListener('change', (event) => {
+  const checkbox = event.target.closest('.task-select');
+  if (!checkbox) return;
+  const row = checkbox.closest('[data-task-id]');
+  if (checkbox.checked) {
+    selectedTaskIds.add(row.dataset.taskId);
+  } else {
+    selectedTaskIds.delete(row.dataset.taskId);
+  }
+  renderTaskBulkToolbar();
+});
+scheduleTimeline.addEventListener('change', (event) => {
+  const checkbox = event.target.closest('.activity-select');
+  if (!checkbox) return;
+  const row = checkbox.closest('[data-activity-id]');
+  if (checkbox.checked) {
+    selectedActivityIds.add(row.dataset.activityId);
+  } else {
+    selectedActivityIds.delete(row.dataset.activityId);
+  }
+  renderScheduleBulkToolbar();
+});
+
+const taskDragType = 'application/x-taskforge-task';
+
+function handleTaskDragStart(event) {
+  const row = event.target.closest('[data-task-id]');
+  const task = row ? findTask(row.dataset.taskId) : null;
+  if (!task || !event.dataTransfer) return;
+  event.dataTransfer.setData(taskDragType, task.id);
+  event.dataTransfer.setData('text/plain', task.title);
+  event.dataTransfer.effectAllowed = 'copy';
+}
+
+function openScheduleFromTask(task, dateKey) {
+  openActivityForm(null, { title: task.title, description: task.description, date: dateKey });
+}
+
+function bindTaskDropTarget(element, getDate) {
+  element.addEventListener('dragover', (event) => {
+    if (!event.dataTransfer || ![...event.dataTransfer.types].includes(taskDragType)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+    element.classList.add('drop-target--active');
+  });
+  element.addEventListener('dragleave', (event) => {
+    if (!element.contains(event.relatedTarget)) {
+      element.classList.remove('drop-target--active');
+    }
+  });
+  element.addEventListener('drop', (event) => {
+    element.classList.remove('drop-target--active');
+    const id = event.dataTransfer?.getData(taskDragType);
+    if (!id) return;
+    event.preventDefault();
+    const task = findTask(id);
+    if (task) openScheduleFromTask(task, getDate());
+  });
+}
+
+for (const list of [managedTaskList, todayTaskList, scheduleTaskStripList]) {
+  list.addEventListener('dragstart', handleTaskDragStart);
+}
+bindTaskDropTarget(document.querySelector('.schedule-panel'), () => getLocalDateKey(new Date()));
+bindTaskDropTarget(document.querySelector('.schedule-timeline-panel'), () => selectedScheduleDate);
+
+scheduleTaskButton.addEventListener('click', () => {
+  const task = findTask(selectedTaskId);
+  if (!task) return;
+  detailsDialog.close();
+  openScheduleFromTask(task, task.dueDate || getLocalDateKey(new Date()));
+});
+
+async function openQuickCapture() {
+  if (workspaceLocked) {
+    lockPin.focus();
+    lockError.textContent = 'Unlock your profile to capture a task.';
+    lockError.hidden = false;
+    return;
+  }
+  if (quickCaptureOpening) return;
+  quickCaptureOpening = true;
+  try {
+    const target = await window.appApi.consumeCapture();
+    if (!target) return;
+    if (!quickCaptureDialog.open) {
+      quickCaptureProfileId = target.profileId;
+      quickCaptureTitle.value = '';
+      quickCaptureError.hidden = true;
+      document.querySelector('#quick-capture-profile').textContent = `Saving to ${target.name}`;
+      quickCaptureDialog.showModal();
+    }
+    quickCaptureTitle.focus();
+  } catch (error) {
+    showToast(`Could not open quick capture: ${error.message}`, true);
+  } finally {
+    quickCaptureOpening = false;
+  }
+}
+
+for (const id of ['close-quick-capture', 'cancel-quick-capture']) {
+  document.getElementById(id).addEventListener('click', () => quickCaptureDialog.close());
+}
+quickCaptureTitle.addEventListener('input', () => {
+  quickCaptureError.hidden = true;
+});
+quickCaptureDialog.addEventListener('close', () => {
+  quickCaptureTitle.value = '';
+  quickCaptureProfileId = null;
+});
+document.querySelector('#quick-capture-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (quickCaptureSave.disabled) return;
+  const title = quickCaptureTitle.value.trim();
+  if (!title) {
+    quickCaptureError.textContent = 'Enter a task title before saving.';
+    quickCaptureError.hidden = false;
+    quickCaptureTitle.focus();
+    return;
+  }
+  quickCaptureSave.disabled = true;
+  try {
+    tasks = await window.appApi.quickCapture(quickCaptureProfileId, title);
+    quickCaptureDialog.close();
+    renderTasks();
+    showToast('Task captured.');
+  } catch (error) {
+    quickCaptureError.textContent = `Could not capture task: ${error.message}`;
+    quickCaptureError.hidden = false;
+  } finally {
+    quickCaptureSave.disabled = false;
+  }
+});
+
+const unsubscribeQuickCapture = window.appApi?.onQuickCapture(openQuickCapture) ?? (() => {});
+
 function openTaskForm(task = null) {
   editingTaskId = task ? task.id : null;
   elements.formTitle.textContent = task ? 'Edit task' : 'Create a task';
@@ -3007,6 +3906,7 @@ function openTaskForm(task = null) {
     : '';
   elements.formError.hidden = true;
   elements.formError.textContent = '';
+  openRecurrenceForm('task', task);
   taskDialog.showModal();
   elements.titleInput.focus();
 }
@@ -3049,11 +3949,13 @@ function openTaskDetails(task) {
   elements.detailMeta.replaceChildren(
     createPriorityBadge(task.priority),
     makeElement('span', 'managed-task__due', `Due ${formatDueDate(task.dueDate)}`),
-    makeElement('span', 'task-status', task.completed ? 'Completed' : 'Pending'),
+    makeElement('span', 'task-status', task.skipped ? 'Skipped' : task.completed ? 'Completed' : 'Pending'),
   );
   elements.detailDescription.textContent = task.description || 'No description provided.';
   elements.detailCreated.textContent = `Created ${formatDateTime(task.createdAt)}`;
   elements.detailToggle.textContent = task.completed ? 'Mark pending' : 'Mark completed';
+  scheduleTaskButton.hidden = Boolean(task.skipped);
+  configureOccurrenceDetails('task', task, elements.detailMeta, elements.detailToggle);
   detailsDialog.showModal();
 }
 
@@ -3073,19 +3975,19 @@ async function updateTaskCompletion(id, completed) {
 
 async function deleteTask(id) {
   const task = findTask(id);
-  if (!task || !window.confirm(`Delete “${task.title}”? This cannot be undone.`)) {
-    return;
-  }
+  if (!task) return;
+  const action = task.recurrence ? (task.skipped ? 'Restore occurrence' : 'Skip occurrence') : 'Delete task';
+  if (!window.confirm(`${action} “${task.title}”? ${task.recurrence ? 'Other occurrences stay unchanged.' : 'You can undo this with Ctrl+Z.'}`)) return;
 
   try {
-    tasks = await window.taskApi.delete(id);
+    tasks = task.recurrence ? await window.taskApi.skip(id, !task.skipped) : await window.taskApi.delete(id);
     renderTasks();
     if (detailsDialog.open) {
       detailsDialog.close();
     }
-    showToast('Task deleted.');
+    showToast(task.recurrence ? (task.skipped ? 'Occurrence restored.' : 'Occurrence skipped.') : 'Task deleted.');
   } catch (error) {
-    showToast(`Could not delete task: ${error.message}`, true);
+    showToast(`Could not change task: ${error.message}`, true);
   }
 }
 
@@ -3126,12 +4028,14 @@ async function addQuickTask(title) {
 
 taskForm.addEventListener('submit', async (event) => {
   event.preventDefault();
+  if (elements.saveButton.disabled) return;
   const taskInput = {
     title: elements.titleInput.value.trim(),
     description: elements.descriptionInput.value.trim(),
     priority: elements.priorityInput.value,
     dueDate: elements.dueDateInput.value || null,
     reminderAt: parseLocalDateTimeInput(document.querySelector('#task-reminder-at').value),
+    recurrence: getRecurrenceInput('task'),
   };
 
   if (!isPopupDateValid(elements.dueDateDisplay, elements.dueDateInput, true)) {
@@ -3159,7 +4063,7 @@ taskForm.addEventListener('submit', async (event) => {
   elements.saveButton.disabled = true;
   try {
     tasks = editingTaskId
-      ? await window.taskApi.update(editingTaskId, taskInput)
+      ? await window.taskApi.update(editingTaskId, taskInput, recurrenceForms.task.scope.value)
       : await window.taskApi.add(taskInput);
     taskDialog.close();
     renderTasks();
@@ -3174,6 +4078,7 @@ taskForm.addEventListener('submit', async (event) => {
 
 activityForm.addEventListener('submit', async (event) => {
   event.preventDefault();
+  if (elements.activitySaveButton.disabled) return;
   if (!isPopupDateValid(elements.activityDateDisplay, elements.activityDateInput, false)) {
     elements.activityFormError.textContent = 'Enter a valid activity date as DD/MM/YYYY.';
     elements.activityFormError.hidden = false;
@@ -3285,6 +4190,12 @@ bindPopupDateInput(
   document.querySelector('#activity-date-open'),
   false,
 );
+bindPopupDateInput(
+  bulkRescheduleDateDisplay,
+  bulkRescheduleDate,
+  document.querySelector('#bulk-reschedule-date-open'),
+  true,
+);
 
 elements.activityDetailToggle.addEventListener('click', async () => {
   const activity = findActivity(selectedActivityId);
@@ -3329,7 +4240,7 @@ document.querySelector('#habit-selected-date').addEventListener('change', (event
     setSelectedHabitDate(event.target.value);
   }
 });
-document.querySelector('#habit-list').addEventListener('click', (event) => {
+document.querySelector('#habit-list').addEventListener('click', async (event) => {
   const button = event.target.closest('[data-habit-action]');
   const card = button?.closest('[data-habit-id]');
   const habit = card ? habits.find((entry) => entry.id === card.dataset.habitId) : null;
@@ -3338,11 +4249,15 @@ document.querySelector('#habit-list').addEventListener('click', (event) => {
   }
   if (button.dataset.habitAction === 'toggle-completion') {
     const summary = getHabitSummaryFor(habit.id);
-    updateHabitData(() => window.habitApi.setCompletion(
+    const completed = !summary?.completedOnDate;
+    const updated = await updateHabitData(() => window.habitApi.setCompletion(
       habit.id,
       selectedHabitDate,
-      !summary?.completedOnDate,
+      completed,
     ));
+    if (updated) {
+      showToast(completed ? 'Habit marked complete.' : 'Habit reopened.');
+    }
   } else if (button.dataset.habitAction === 'edit') {
     openHabitForm(habit);
   } else if (button.dataset.habitAction === 'toggle-active') {
@@ -3622,6 +4537,9 @@ document.querySelector('#reset-appearance').addEventListener('click', () => {
 document.querySelector('#reset-application-data').addEventListener('click', resetApplicationData);
 document.querySelector('#export-backup').addEventListener('click', exportApplicationBackup);
 document.querySelector('#restore-backup').addEventListener('click', restoreApplicationBackup);
+document.querySelector('#export-calendar').addEventListener('click', () => exportWorkspace('calendar'));
+document.querySelector('#export-tasks-csv').addEventListener('click', () => exportWorkspace('tasks'));
+document.querySelector('#export-activities-csv').addEventListener('click', () => exportWorkspace('activities'));
 
 focusSettingsForm.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -3671,15 +4589,70 @@ if (window.focusApi) {
 }
 
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) {
+  if (!document.hidden && !workspaceLocked) {
     synchronizeFocusTimer();
   }
 });
-window.addEventListener('focus', synchronizeFocusTimer);
+window.addEventListener('focus', () => {
+  if (!workspaceLocked) {
+    synchronizeFocusTimer();
+  }
+});
 
 notificationCenterButton.addEventListener('click', openNotificationCenter);
 document.querySelector('#close-notification-center').addEventListener('click', () => {
   notificationCenterDialog.close();
+});
+notificationCenterTabs.forEach((tab) => {
+  tab.addEventListener('click', () => {
+    const nextTab = tab.dataset.notificationTab;
+    if (nextTab === notificationCenterTab) {
+      return;
+    }
+    notificationCenterTab = nextTab;
+    if (notificationCenterState) {
+      renderNotificationCenter(notificationCenterState);
+    }
+  });
+});
+notificationMarkAllRead.addEventListener('click', async () => {
+  notificationMarkAllRead.disabled = true;
+  try {
+    const result = await window.notificationApi.markRead('all');
+    applyNotificationBadge(result.unreadCount);
+    if (notificationCenterState) {
+      renderNotificationCenter({
+        ...notificationCenterState,
+        inbox: result.inbox,
+        unreadCount: result.unreadCount,
+      });
+    }
+  } catch (error) {
+    showToast(`Could not mark reminders as read: ${error.message}`, true);
+    notificationMarkAllRead.disabled = notificationUnreadCount === 0;
+  }
+});
+notificationClearHistory.addEventListener('click', async () => {
+  if (!window.confirm('Clear all delivered notification history? This cannot be undone.')) {
+    return;
+  }
+  notificationClearHistory.disabled = true;
+  try {
+    const result = await window.notificationApi.clearHistory();
+    applyNotificationBadge(result.unreadCount);
+    if (notificationCenterState) {
+      renderNotificationCenter({
+        ...notificationCenterState,
+        inbox: result.inbox,
+        unreadCount: result.unreadCount,
+      });
+    }
+    showToast('Notification history cleared.');
+  } catch (error) {
+    showToast(`Could not clear notification history: ${error.message}`, true);
+  } finally {
+    notificationClearHistory.disabled = false;
+  }
 });
 notificationCenterList.addEventListener('click', (event) => {
   const settingsButton = event.target.closest('[data-notification-action="settings"]');
@@ -3688,16 +4661,72 @@ notificationCenterList.addEventListener('click', (event) => {
     navigateToPage('settings');
     return;
   }
-  const item = event.target.closest('[data-notification-id]');
-  const notification = item
-    ? notificationCenterEvents.find((entry) => entry.id === item.dataset.notificationId)
-    : null;
-  if (notification) {
-    openNotificationTarget(notification).catch((error) => {
-      showToast(`Could not open this reminder: ${error.message}`, true);
-    });
+  if (event.target.closest('select')) {
+    return;
+  }
+  const item = event.target.closest('[data-notification-key]');
+  const descriptor = item ? notificationCenterItems.get(item.dataset.notificationKey) : null;
+  if (!descriptor) {
+    return;
+  }
+  const button = event.target.closest('[data-notification-action]');
+  const action = button?.dataset.notificationAction || 'open';
+  performNotificationAction(descriptor, action).catch((error) => {
+    showToast(`Could not update this reminder: ${error.message}`, true);
+  });
+});
+notificationCenterList.addEventListener('change', (event) => {
+  const select = event.target.closest('[data-notification-snooze]');
+  if (!select) {
+    return;
+  }
+  const preset = select.value;
+  const item = select.closest('[data-notification-key]');
+  const descriptor = item ? notificationCenterItems.get(item.dataset.notificationKey) : null;
+  select.value = '';
+  if (!preset || !descriptor) {
+    return;
+  }
+  snoozeNotification(descriptor.target.id, preset).catch((error) => {
+    showToast(`Could not snooze this reminder: ${error.message}`, true);
+  });
+});
+testNotificationButton.addEventListener('click', async () => {
+  testNotificationButton.disabled = true;
+  testNotificationStatus.textContent = 'Sending test notification…';
+  try {
+    const result = await window.notificationApi.test();
+    if (!result.supported) {
+      testNotificationStatus.textContent = 'Desktop notifications are not supported on this system.';
+    } else if (!result.shown) {
+      testNotificationStatus.textContent = 'The system did not display the test notification. Check your OS notification settings.';
+    } else {
+      testNotificationStatus.textContent = 'Test notification sent. Click it to open TaskForge.';
+    }
+  } catch (error) {
+    testNotificationStatus.textContent = `Could not send a test notification: ${error.message}`;
+  } finally {
+    testNotificationButton.disabled = false;
   }
 });
+const unsubscribeNotificationChanges = window.notificationApi?.onChanged
+  ? window.notificationApi.onChanged((payload) => {
+    applyNotificationBadge(payload?.unreadCount);
+    if (notificationCenterDialog.open) {
+      refreshNotificationCenterState();
+    }
+  })
+  : () => {};
+const unsubscribeNotificationTargets = window.notificationApi?.onOpenTarget
+  ? window.notificationApi.onOpenTarget((target) => {
+    if (workspaceLocked) {
+      return;
+    }
+    openNotificationTarget(target).catch((error) => {
+      showToast(`Could not open this reminder: ${error.message}`, true);
+    });
+  })
+  : () => {};
 
 globalSearchButton.addEventListener('click', openGlobalSearch);
 globalSearchInput.addEventListener('input', () => {
@@ -3762,7 +4791,7 @@ document.querySelector('#clear-recent-searches').addEventListener('click', () =>
   recentSearches = [];
   recentSearchError = '';
   try {
-    window.localStorage.removeItem(recentSearchStorageKey);
+    window.localStorage.removeItem(profileStorageKey(recentSearchStorageKey));
   } catch (error) {
     recentSearchError = `Recent search history could not be cleared: ${error.message}`;
   }
@@ -3835,6 +4864,9 @@ commandPaletteDialog.addEventListener('click', (event) => {
   }
 });
 document.addEventListener('keydown', (event) => {
+  if (workspaceLocked) {
+    return;
+  }
   const action = window.taskForgeKeyboardShortcuts.getShortcutAction(event);
   if (!action) {
     return;
@@ -3889,6 +4921,10 @@ document.addEventListener('keydown', (event) => {
     navigateToPage('settings');
   } else if (action === 'new-activity') {
     openActivityForm();
+  } else if (action === 'undo') {
+    undoLastChange();
+  } else if (action === 'redo') {
+    redoLastChange();
   }
 });
 
@@ -3901,6 +4937,496 @@ pageLinks.forEach((link) => {
 
 window.addEventListener('popstate', () => {
   showPage(window.location.hash.slice(1));
+});
+
+function getProfileInitials(name) {
+  return (typeof name === 'string' ? name.trim().charAt(0) : '').toUpperCase() || '?';
+}
+
+function applyProfileColor(element, color) {
+  if (element) {
+    element.style.setProperty('--profile-color', color || profilePalette[0]);
+  }
+}
+
+function renderProfileColorOptions(container, selectedColor, onSelect) {
+  const colors = profilePalette.includes(selectedColor)
+    ? profilePalette
+    : [selectedColor, ...profilePalette];
+  const buttons = colors.map((color) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'profile-color';
+    button.dataset.color = color;
+    button.style.setProperty('--swatch', color);
+    button.setAttribute('role', 'radio');
+    button.setAttribute('aria-checked', String(color === selectedColor));
+    button.setAttribute('aria-label', `Profile color ${color}`);
+    button.addEventListener('click', () => onSelect(color));
+    return button;
+  });
+  container.replaceChildren(...buttons);
+}
+
+function renderProfileChrome() {
+  const active = profileState.activeProfile;
+  const name = active?.name ?? 'Default';
+  const color = active?.color ?? profilePalette[0];
+  sidebarProfileName.textContent = name;
+  sidebarProfileAvatar.textContent = getProfileInitials(name);
+  applyProfileColor(sidebarProfileAvatar, color);
+  sidebarProfilePlan.textContent = active?.hasPin
+    ? (workspaceLocked ? 'Locked' : 'PIN protected')
+    : 'Local profile';
+  profileButton.setAttribute('aria-label', `Manage profiles. Current profile: ${name}`);
+  lockProfileName.textContent = name;
+  lockProfileAvatar.textContent = getProfileInitials(name);
+  applyProfileColor(lockProfileAvatar, color);
+}
+
+function createProfileRow(profile) {
+  const isActive = profile.id === profileState.activeProfileId;
+  const row = document.createElement('li');
+  row.className = isActive ? 'profile-row profile-row--active' : 'profile-row';
+  row.dataset.profileId = profile.id;
+
+  const avatar = document.createElement('span');
+  avatar.className = 'profile__avatar';
+  avatar.setAttribute('aria-hidden', 'true');
+  avatar.textContent = getProfileInitials(profile.name);
+  applyProfileColor(avatar, profile.color);
+
+  const details = document.createElement('div');
+  details.className = 'profile-row__details';
+  const label = document.createElement('strong');
+  label.textContent = profile.name;
+  const status = document.createElement('small');
+  status.className = 'profile-row__status';
+  if (profile.hasPin) {
+    status.classList.add('profile-row__status--locked');
+  }
+  if (isActive) {
+    status.textContent = workspaceLocked ? 'Current profile · Locked' : 'Current profile';
+  } else {
+    status.textContent = profile.hasPin ? 'PIN protected' : 'No PIN';
+  }
+  details.append(label, status);
+  row.append(avatar, details);
+
+  if (isActive && workspaceLocked) {
+    const unlockButton = document.createElement('button');
+    unlockButton.type = 'button';
+    unlockButton.className = 'secondary-button profile-row__action';
+    unlockButton.dataset.profileAction = 'unlock-active';
+    unlockButton.textContent = 'Unlock';
+    row.append(unlockButton);
+  } else if (!isActive) {
+    const switchButton = document.createElement('button');
+    switchButton.type = 'button';
+    switchButton.className = 'secondary-button profile-row__action';
+    switchButton.dataset.profileAction = 'switch';
+    switchButton.dataset.profileId = profile.id;
+    switchButton.textContent = 'Switch';
+    const deleteButton = document.createElement('button');
+    deleteButton.type = 'button';
+    deleteButton.className = 'icon-button profile-row__delete';
+    deleteButton.dataset.profileAction = 'delete';
+    deleteButton.dataset.profileId = profile.id;
+    deleteButton.setAttribute('aria-label', `Delete profile ${profile.name}`);
+    deleteButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l.8 12.5h9.4L17.5 7M10 11v5m4-5v5"/></svg>';
+    row.append(switchButton, deleteButton);
+  }
+
+  return row;
+}
+
+function selectProfileEditColor(color) {
+  profileEditColor = color;
+  renderProfileColorOptions(profileEditColors, color, selectProfileEditColor);
+}
+
+function selectProfileCreateColor(color) {
+  profileCreateColor = color;
+  renderProfileColorOptions(profileCreateColors, color, selectProfileCreateColor);
+}
+
+function renderProfileDialog() {
+  const active = profileState.activeProfile;
+  profileDialog.classList.toggle('profile-dialog--locked', workspaceLocked);
+  if (!active) {
+    profileList.replaceChildren();
+    return;
+  }
+
+  profileCurrentBadge.textContent = workspaceLocked ? 'Locked' : 'Unlocked';
+  profileCurrentBadge.classList.toggle('profile-badge--locked', workspaceLocked);
+  profileCurrentName.textContent = active.name;
+  profileCurrentAvatar.textContent = getProfileInitials(active.name);
+  applyProfileColor(profileCurrentAvatar, active.color);
+  profileCurrentDetail.textContent = active.hasPin
+    ? 'PIN protected · Stored on this device'
+    : 'No PIN · Stored on this device';
+
+  profileEditName.value = active.name;
+  profileEditColor = active.color;
+  renderProfileColorOptions(profileEditColors, active.color, selectProfileEditColor);
+
+  profileSecurityStatus.textContent = active.hasPin
+    ? 'A PIN is set. TaskForge asks for it when this profile is locked or the app restarts.'
+    : 'No PIN is set. Anyone using this device can open this profile.';
+  profilePinRemove.hidden = !active.hasPin;
+  profileLockNow.hidden = !active.hasPin;
+
+  profileList.replaceChildren(...profileState.profiles.map(createProfileRow));
+}
+
+function resetProfileSwitchForm() {
+  pendingProfileSwitchId = null;
+  profileSwitchForm.hidden = true;
+  profileSwitchPin.value = '';
+  profileSwitchName.textContent = '';
+  profileSwitchError.hidden = true;
+}
+
+function openProfileDialog() {
+  if (!window.profileApi) {
+    showToast('Profiles are available in the TaskForge desktop app.', true);
+    return;
+  }
+  profileEditError.hidden = true;
+  profilePinError.hidden = true;
+  profileCreateError.hidden = true;
+  profilePinNew.value = '';
+  profilePinConfirm.value = '';
+  profileCreateForm.reset();
+  resetProfileSwitchForm();
+  profileCreateColor = profilePalette[profileState.profiles.length % profilePalette.length];
+  renderProfileColorOptions(profileCreateColors, profileCreateColor, selectProfileCreateColor);
+  renderProfileDialog();
+  profileDialog.showModal();
+}
+
+function closeProfileDialog() {
+  resetProfileSwitchForm();
+  profileDialog.close();
+}
+
+function setWorkspaceLocked(locked) {
+  workspaceLocked = Boolean(locked);
+  document.body.classList.toggle('is-locked', workspaceLocked);
+  appShell.inert = workspaceLocked;
+  lockScreen.hidden = !workspaceLocked;
+  applyUndoState(undoState);
+  if (workspaceLocked) {
+    quickCaptureDialog.close();
+    lockPin.value = '';
+    lockError.hidden = true;
+  }
+}
+
+function applyProfileView(view) {
+  profileState = view;
+  setWorkspaceLocked(view.locked);
+  renderProfileChrome();
+  if (profileDialog.open) {
+    renderProfileDialog();
+  }
+}
+
+function showProfileError(element, message) {
+  element.textContent = message;
+  element.hidden = false;
+}
+
+async function lockCurrentProfile() {
+  if (profileActionPending) {
+    return;
+  }
+  profileActionPending = true;
+  try {
+    const view = await window.profileApi.lock();
+    closeProfileDialog();
+    applyProfileView(view);
+    requestAnimationFrame(() => lockPin.focus());
+    showToast('Profile locked.');
+  } catch (error) {
+    showToast(`Could not lock this profile: ${error.message}`, true);
+  } finally {
+    profileActionPending = false;
+  }
+}
+
+async function performProfileSwitch(profileId, pin) {
+  if (profileActionPending) {
+    return;
+  }
+  profileActionPending = true;
+  try {
+    await window.profileApi.activate(profileId, pin);
+    window.location.reload();
+  } catch (error) {
+    if (pin === undefined) {
+      showToast(`Could not switch profiles: ${error.message}`, true);
+    } else {
+      showProfileError(profileSwitchError, error.message);
+    }
+  } finally {
+    profileActionPending = false;
+  }
+}
+
+function requestProfileSwitch(profileId) {
+  const profile = profileState.profiles.find((item) => item.id === profileId);
+  if (!profile) {
+    return;
+  }
+  if (profile.id === profileState.activeProfileId) {
+    if (workspaceLocked) {
+      closeProfileDialog();
+      requestAnimationFrame(() => lockPin.focus());
+    } else {
+      showToast('This profile is already active.');
+    }
+    return;
+  }
+  if (!profile.hasPin) {
+    performProfileSwitch(profile.id);
+    return;
+  }
+  pendingProfileSwitchId = profile.id;
+  profileSwitchName.textContent = profile.name;
+  profileSwitchPin.value = '';
+  profileSwitchError.hidden = true;
+  profileSwitchForm.hidden = false;
+  profileSwitchPin.focus();
+}
+
+function openProfileDeleteDialog(profileId) {
+  const profile = profileState.profiles.find((item) => item.id === profileId);
+  if (!profile || profile.id === profileState.activeProfileId) {
+    return;
+  }
+  pendingProfileDeleteId = profile.id;
+  profileDeleteName.textContent = profile.name;
+  profileDeleteError.hidden = true;
+  profileDeleteDialog.showModal();
+}
+
+profileButton.addEventListener('click', openProfileDialog);
+document.querySelector('#close-profile-dialog').addEventListener('click', closeProfileDialog);
+profileDialog.addEventListener('click', (event) => {
+  if (event.target === profileDialog) {
+    closeProfileDialog();
+  }
+});
+
+profileEditForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (profileActionPending) {
+    return;
+  }
+  const name = profileEditName.value.trim();
+  if (!name) {
+    showProfileError(profileEditError, 'Enter a profile name.');
+    return;
+  }
+  profileActionPending = true;
+  profileEditError.hidden = true;
+  const saveButton = document.querySelector('#profile-edit-save');
+  saveButton.disabled = true;
+  try {
+    const view = await window.profileApi.update(profileState.activeProfileId, {
+      name,
+      color: profileEditColor,
+    });
+    applyProfileView(view);
+    showToast('Profile updated.');
+  } catch (error) {
+    showProfileError(profileEditError, `Could not update profile: ${error.message}`);
+  } finally {
+    profileActionPending = false;
+    saveButton.disabled = false;
+  }
+});
+
+profilePinForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (profileActionPending) {
+    return;
+  }
+  const pin = profilePinNew.value.trim();
+  const confirmation = profilePinConfirm.value.trim();
+  if (!/^\d{4,8}$/.test(pin)) {
+    showProfileError(profilePinError, 'PIN must be 4 to 8 digits.');
+    return;
+  }
+  if (pin !== confirmation) {
+    showProfileError(profilePinError, 'PIN entries do not match.');
+    return;
+  }
+  profileActionPending = true;
+  profilePinError.hidden = true;
+  const saveButton = document.querySelector('#profile-pin-save');
+  saveButton.disabled = true;
+  try {
+    const view = await window.profileApi.setPin(profileState.activeProfileId, pin);
+    applyProfileView(view);
+    profilePinNew.value = '';
+    profilePinConfirm.value = '';
+    showToast('Profile PIN saved.');
+  } catch (error) {
+    showProfileError(profilePinError, `Could not save PIN: ${error.message}`);
+  } finally {
+    profileActionPending = false;
+    saveButton.disabled = false;
+  }
+});
+
+profilePinRemove.addEventListener('click', async () => {
+  if (profileActionPending) {
+    return;
+  }
+  if (!window.confirm('Remove this profile PIN? Anyone using this device will be able to open the profile.')) {
+    return;
+  }
+  profileActionPending = true;
+  try {
+    const view = await window.profileApi.setPin(profileState.activeProfileId, null);
+    applyProfileView(view);
+    showToast('Profile PIN removed.');
+  } catch (error) {
+    showProfileError(profilePinError, `Could not remove PIN: ${error.message}`);
+  } finally {
+    profileActionPending = false;
+  }
+});
+
+profileLockNow.addEventListener('click', lockCurrentProfile);
+
+profileCreateForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (profileActionPending) {
+    return;
+  }
+  const name = profileCreateName.value.trim();
+  if (!name) {
+    showProfileError(profileCreateError, 'Enter a name for the new profile.');
+    return;
+  }
+  const pin = profileCreatePin.value.trim();
+  if (pin && !/^\d{4,8}$/.test(pin)) {
+    showProfileError(profileCreateError, 'PIN must be 4 to 8 digits, or left empty.');
+    return;
+  }
+  profileActionPending = true;
+  profileCreateError.hidden = true;
+  const createButton = document.querySelector('#profile-create-submit');
+  createButton.disabled = true;
+  try {
+    await window.profileApi.create({ name, color: profileCreateColor, pin: pin || null });
+    window.location.reload();
+  } catch (error) {
+    showProfileError(profileCreateError, `Could not create profile: ${error.message}`);
+  } finally {
+    profileActionPending = false;
+    createButton.disabled = false;
+  }
+});
+
+profileList.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-profile-action]');
+  if (!button) {
+    return;
+  }
+  if (button.dataset.profileAction === 'switch') {
+    requestProfileSwitch(button.dataset.profileId);
+  } else if (button.dataset.profileAction === 'delete') {
+    openProfileDeleteDialog(button.dataset.profileId);
+  } else if (button.dataset.profileAction === 'unlock-active') {
+    closeProfileDialog();
+    requestAnimationFrame(() => lockPin.focus());
+  }
+});
+
+profileSwitchForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  if (!pendingProfileSwitchId) {
+    return;
+  }
+  const pin = profileSwitchPin.value.trim();
+  if (!/^\d{4,8}$/.test(pin)) {
+    showProfileError(profileSwitchError, 'PIN must be 4 to 8 digits.');
+    return;
+  }
+  performProfileSwitch(pendingProfileSwitchId, pin);
+});
+document.querySelector('#profile-switch-cancel').addEventListener('click', resetProfileSwitchForm);
+
+document.querySelector('#close-profile-delete-dialog').addEventListener('click', () => {
+  profileDeleteDialog.close();
+});
+document.querySelector('#cancel-profile-delete').addEventListener('click', () => {
+  profileDeleteDialog.close();
+});
+profileDeleteDialog.addEventListener('click', (event) => {
+  if (event.target === profileDeleteDialog) {
+    profileDeleteDialog.close();
+  }
+});
+document.querySelector('#confirm-profile-delete').addEventListener('click', async () => {
+  if (!pendingProfileDeleteId || profileActionPending) {
+    return;
+  }
+  const deletedProfileId = pendingProfileDeleteId;
+  profileActionPending = true;
+  const button = document.querySelector('#confirm-profile-delete');
+  button.disabled = true;
+  profileDeleteError.hidden = true;
+  try {
+    const view = await window.profileApi.delete(deletedProfileId);
+    pendingProfileDeleteId = null;
+    try {
+      window.localStorage.removeItem(`${recentSearchStorageKey}:${deletedProfileId}`);
+      window.localStorage.removeItem(`${recentCommandStorageKey}:${deletedProfileId}`);
+    } catch {
+      // Renderer history cleanup is best-effort.
+    }
+    profileDeleteDialog.close();
+    applyProfileView(view);
+    showToast('Profile deleted. Its data folder was moved aside for recovery.');
+  } catch (error) {
+    showProfileError(profileDeleteError, `Could not delete profile: ${error.message}`);
+  } finally {
+    profileActionPending = false;
+    button.disabled = false;
+  }
+});
+
+document.querySelector('#lock-switch-profile').addEventListener('click', openProfileDialog);
+lockForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (profileActionPending) {
+    return;
+  }
+  const pin = lockPin.value.trim();
+  if (!/^\d{4,8}$/.test(pin)) {
+    showProfileError(lockError, 'PIN must be 4 to 8 digits.');
+    return;
+  }
+  profileActionPending = true;
+  lockError.hidden = true;
+  const submitButton = document.querySelector('#lock-submit');
+  submitButton.disabled = true;
+  try {
+    await window.profileApi.unlock(pin);
+    window.location.reload();
+  } catch (error) {
+    showProfileError(lockError, error.message);
+    lockPin.select();
+  } finally {
+    profileActionPending = false;
+    submitButton.disabled = false;
+  }
 });
 
 async function loadTasks() {
@@ -3952,6 +5478,9 @@ function updateFocusLiveClock() {
 
 updateDateAndClock();
 const clockInterval = window.setInterval(() => {
+  if (workspaceLocked) {
+    return;
+  }
   const previousDate = lastAnalyticsDate;
   updateDateAndClock();
   const currentPage = window.location.hash.slice(1) || 'dashboard';
@@ -3991,15 +5520,80 @@ window.addEventListener('beforeunload', () => {
   window.clearTimeout(toastTimeout);
   unsubscribeTimerFinished();
   unsubscribeNotificationError();
+  unsubscribeQuickCapture();
+  unsubscribeUndoState();
+  unsubscribeNotificationChanges();
+  unsubscribeNotificationTargets();
 });
-showPage(window.location.hash.slice(1) || 'dashboard');
-setFocusMode(focusMode);
-loadAppSettings();
-loadLastBackupInformation();
 document.querySelector('#creator-signature').textContent = creatorSignature;
 document.querySelector('#dashboard-creator-signature').textContent = creatorSignature;
-loadFocusData();
-loadTasks();
-loadActivities();
-loadHabits();
-loadGoals();
+
+let workspaceStarted = false;
+async function startWorkspace() {
+  if (workspaceStarted) {
+    return;
+  }
+  workspaceStarted = true;
+  showPage(window.location.hash.slice(1) || 'dashboard');
+  setFocusMode(focusMode);
+  await Promise.all([
+    loadAppSettings(),
+    loadLastBackupInformation(),
+    loadFocusData(),
+    loadTasks(),
+    loadActivities(),
+    loadHabits(),
+    loadGoals(),
+  ]);
+  if (window.undoApi) {
+    applyUndoState(await window.undoApi.state());
+  }
+  if (window.notificationApi?.list) {
+    try {
+      const notificationState = await window.notificationApi.list();
+      if (Number.isInteger(notificationState?.unreadCount)) {
+        applyNotificationBadge(notificationState.unreadCount);
+      }
+    } catch (error) {
+      console.error('Could not load the notification badge.', error);
+    }
+  }
+  renderProfileChrome();
+}
+
+async function initializeApplication() {
+  try {
+    if (window.profileApi) {
+      const view = await window.profileApi.state();
+      applyProfileView(view);
+      if (view.locked) {
+        requestAnimationFrame(() => lockPin.focus());
+        return;
+      }
+    }
+    await startWorkspace();
+  } catch (error) {
+    showToast(`Could not start TaskForge: ${error.message}`, true);
+    if (!workspaceLocked) {
+      startWorkspace().catch(() => {});
+    }
+  } finally {
+    document.body.classList.remove('is-booting');
+    if (window.appApi?.desktopReady) {
+      try {
+        const desktop = await window.appApi.desktopReady();
+        document.querySelector('#desktop-capture-status').textContent = desktop.shortcutRegistered
+          ? 'Quick capture: Ctrl+Alt+N, even when TaskForge is minimized or unfocused.'
+          : 'Ctrl+Alt+N is unavailable (it may be used by another app). Use Quick capture in the tray menu, or Ctrl+N in TaskForge.';
+        if (!desktop.trayAvailable) {
+          document.querySelector('#desktop-tray-status').textContent = 'The system tray is unavailable. Closing this window exits TaskForge.';
+        }
+        if (desktop.pendingCapture) await openQuickCapture();
+      } catch (error) {
+        showToast(`Could not initialize desktop capture: ${error.message}`, true);
+      }
+    }
+  }
+}
+
+initializeApplication();

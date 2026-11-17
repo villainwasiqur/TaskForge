@@ -2,6 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
@@ -11,7 +15,8 @@
     <title>TaskForge | Dashboard</title>
     <link rel="stylesheet" href="./style.css" />
   </head>
-  <body>
+  <body class="is-booting">
+    <a class="skip-link" href="#main-content">Skip to main content</a>
     <div class="app-shell">
       <aside class="sidebar" aria-label="Main sidebar">
         <a class="brand" href="#dashboard" data-page="dashboard" aria-label="TaskForge home">
@@ -97,30 +102,28 @@
           <div class="sidebar-tip__dots" aria-hidden="true"><span></span><span></span><span></span></div>
         </section>
 
-        <div class="profile">
-          <div class="profile__avatar" aria-hidden="true">WR</div>
-          <div class="profile__details">
-            <span class="profile__name">Wasiqur Rahman</span>
-            <span class="profile__plan">Personal workspace</span>
-          </div>
-          <a class="icon-button profile__menu" href="#settings" data-page="settings" aria-label="Open settings">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="5" cy="12" r="1" />
-              <circle cx="12" cy="12" r="1" />
-              <circle cx="19" cy="12" r="1" />
+        <button class="profile profile--button" id="profile-button" type="button" aria-haspopup="dialog" aria-controls="profile-dialog" aria-label="Manage profiles">
+          <span class="profile__avatar" id="sidebar-profile-avatar" aria-hidden="true">D</span>
+          <span class="profile__details">
+            <span class="profile__name" id="sidebar-profile-name">Default</span>
+            <span class="profile__plan" id="sidebar-profile-plan">Local profile</span>
+          </span>
+          <span class="profile__chevron" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="m8 10 4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
-          </a>
-        </div>
+          </span>
+        </button>
       </aside>
 
-      <main class="main-content">
+      <main class="main-content" id="main-content" tabindex="-1">
         <header class="topbar">
           <div class="topbar__identity">
             <a class="topbar__brand" href="#dashboard" data-page="dashboard" aria-label="TaskForge home">
               <img src="../assets/taskforge-mark.svg" alt="" />
               <span>TaskForge</span>
             </a>
-            <div class="breadcrumb"><span>Workspace</span><span aria-hidden="true">/</span><strong id="current-page">Dashboard</strong></div>
+            <div class="breadcrumb"><span>Workspace</span><span aria-hidden="true">/</span><strong id="current-page" aria-live="polite">Dashboard</strong></div>
           </div>
           <div class="topbar__actions">
             <time class="clock" id="live-clock">
@@ -130,6 +133,12 @@
               </svg>
               <span id="clock-time">--:--:-- --</span>
             </time>
+            <button class="icon-button" id="undo-button" type="button" aria-label="Undo" title="Undo (Ctrl+Z)" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5" /><path d="M4 9h10a6 6 0 0 1 0 12h-3" /></svg>
+            </button>
+            <button class="icon-button" id="redo-button" type="button" aria-label="Redo" title="Redo (Ctrl+Y)" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 14 5-5-5-5" /><path d="M20 9H10a6 6 0 0 0 0 12h3" /></svg>
+            </button>
             <button class="icon-button global-search-button" id="global-search-button" type="button" aria-label="Search TaskForge" title="Search (Ctrl+K)">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4 4" /></svg>
             </button>
@@ -138,6 +147,7 @@
                 <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
               </svg>
               <span class="notification-button__dot" id="notification-button-dot"></span>
+              <span class="notification-button__badge" id="notification-button-badge" hidden></span>
             </button>
           </div>
         </header>
@@ -288,7 +298,7 @@
         <section class="page-view tasks-view" data-view="tasks" aria-labelledby="tasks-page-title" hidden>
           <div class="tasks-view__header">
             <div>
-              <p class="welcome__date">WORKSPACE</p>
+              <p class="welcome__date">ACTIVE WORK</p>
               <h1 id="tasks-page-title">My Tasks</h1>
               <p class="welcome__subtitle">Create, organize, and keep track of your work.</p>
             </div>
@@ -308,9 +318,20 @@
                 <button class="filter-button filter-button--active" type="button" data-filter="all" aria-pressed="true">All</button>
                 <button class="filter-button" type="button" data-filter="pending" aria-pressed="false">Pending</button>
                 <button class="filter-button" type="button" data-filter="completed" aria-pressed="false">Completed</button>
+                <button class="filter-button" type="button" data-filter="recurring" aria-pressed="false">Recurring</button>
+                <button class="filter-button" type="button" data-filter="skipped" aria-pressed="false">Skipped</button>
                 <button class="filter-button" type="button" data-filter="High" aria-pressed="false">High</button>
                 <button class="filter-button" type="button" data-filter="Medium" aria-pressed="false">Medium</button>
                 <button class="filter-button" type="button" data-filter="Low" aria-pressed="false">Low</button>
+              </div>
+            </div>
+            <div class="bulk-toolbar" id="task-bulk-toolbar" role="group" aria-label="Bulk task actions" hidden>
+              <span class="bulk-toolbar__count" id="task-bulk-count">0 selected</span>
+              <div class="bulk-toolbar__actions">
+                <button class="secondary-button" id="bulk-complete-tasks" type="button">Complete</button>
+                <button class="secondary-button" id="bulk-reschedule-tasks" type="button">Reschedule…</button>
+                <button class="danger-button" id="bulk-delete-tasks" type="button">Delete</button>
+                <button class="text-button" id="bulk-clear-tasks" type="button">Clear</button>
               </div>
             </div>
             <div class="managed-task-list" id="managed-task-list" aria-live="polite"></div>
@@ -320,7 +341,7 @@
         <section class="page-view" data-view="schedule" aria-labelledby="schedule-page-title" hidden>
           <div class="schedule-view__header">
             <div>
-              <p class="welcome__date">WORKSPACE</p>
+              <p class="welcome__date">TIME BLOCKS</p>
               <h1 id="schedule-page-title">Daily Schedule</h1>
               <p class="welcome__subtitle">Plan your day and see what’s happening next.</p>
             </div>
@@ -345,8 +366,25 @@
               <input id="schedule-date-picker" type="date" aria-hidden="true" tabindex="-1" />
             </div>
           </div>
+          <div class="bulk-toolbar" id="schedule-bulk-toolbar" role="group" aria-label="Bulk activity actions" hidden>
+            <span class="bulk-toolbar__count" id="schedule-bulk-count">0 selected</span>
+            <div class="bulk-toolbar__actions">
+              <button class="secondary-button" id="bulk-complete-activities" type="button">Complete</button>
+              <button class="danger-button" id="bulk-delete-activities" type="button">Delete</button>
+              <button class="text-button" id="bulk-clear-activities" type="button">Clear</button>
+            </div>
+          </div>
           <section class="panel schedule-timeline-panel" aria-label="Daily timeline">
             <div class="schedule-timeline" id="schedule-timeline" aria-live="polite"></div>
+          </section>
+          <section class="panel schedule-task-strip" aria-labelledby="schedule-task-strip-title">
+            <div class="panel__header">
+              <div>
+                <h2 id="schedule-task-strip-title">Tasks to schedule</h2>
+                <p class="panel__subtitle">Drag a task onto the timeline above, or open it and choose “Add to schedule…”.</p>
+              </div>
+            </div>
+            <div class="task-list" id="schedule-task-strip-list" aria-live="polite"></div>
           </section>
         </section>
 
@@ -443,7 +481,7 @@
         <section class="page-view" data-view="focus" aria-labelledby="focus-page-title" hidden>
           <div class="focus-view__header">
             <div>
-              <p class="welcome__date">WORKSPACE</p>
+              <p class="welcome__date">DEEP WORK</p>
               <h1 id="focus-page-title">Focus Timer</h1>
               <p class="welcome__subtitle">Work in focused intervals and make room for mindful breaks.</p>
             </div>
@@ -587,7 +625,7 @@
             <span class="placeholder-card__icon placeholder-card__icon--purple" aria-hidden="true">
               <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.8 1.8 0 0 0 .9 3l-.1.1a1.8 1.8 0 1 1-2.5 2.5l-.1-.1a1.8 1.8 0 0 0-3 .9v.2a1.8 1.8 0 1 1-3.6 0v-.2a1.8 1.8 0 0 0-3-.9l-.1.1a1.8 1.8 0 1 1-2.5-2.5l.1-.1a1.8 1.8 0 0 0-.9-3h-.2a1.8 1.8 0 1 1 0-3.6h.2a1.8 1.8 0 0 0 .9-3l-.1-.1a1.8 1.8 0 1 1 2.5-2.5l.1.1a1.8 1.8 0 0 0 3-.9v-.2a1.8 1.8 0 1 1 3.6 0v.2a1.8 1.8 0 0 0 3 .9l.1-.1a1.8 1.8 0 1 1 2.5 2.5l-.1.1a1.8 1.8 0 0 0 .9 3h.2a1.8 1.8 0 1 1 0 3.6h-.2" /></svg>
             </span>
-            <p class="welcome__date">PREFERENCES</p>
+            <p class="welcome__date">PERSONALIZE</p>
             <h1 id="settings-page-title">Settings</h1>
             <p class="welcome__subtitle">Personalize TaskForge to fit the way you work.</p>
           </div>
@@ -808,6 +846,10 @@
                     <label class="form-field"><span>Goal reminder time</span><input id="goal-reminder-time" type="time" /></label>
                   </div>
                   <p class="form-hint">Reminders missed by more than 15 minutes while TaskForge was closed are skipped rather than shown late. Times use your local system clock.</p>
+                  <div class="notification-preferences__test">
+                    <button class="secondary-button" id="send-test-notification" type="button">Send test notification</button>
+                    <span class="form-hint" id="test-notification-status" role="status"></span>
+                  </div>
                 </section>
                 <p class="form-error" id="app-settings-error" role="alert" hidden></p>
                 <button class="primary-button" id="save-app-settings" type="submit">Save clock &amp; notification preferences</button>
@@ -841,6 +883,7 @@
                   <span>Play notification sound</span>
                 </label>
                 <p class="focus-notification-status" id="focus-notification-status" role="status"></p>
+                <p class="settings-card__hint">Running and paused timers survive app restart. Time away counts toward a running session; if it finishes while the app is closed, the next session waits paused.</p>
                 <button class="primary-button focus-settings__save" id="save-focus-settings" type="submit">Save focus preferences</button>
               </div>
             </form>
@@ -864,6 +907,25 @@
               </div>
             </section>
 
+            <section class="panel settings-card export-card" aria-labelledby="export-title">
+              <div class="panel__header">
+                <div>
+                  <h2 id="export-title">Export &amp; interchange</h2>
+                  <p class="panel__subtitle">Take your plans to a calendar app or a spreadsheet.</p>
+                </div>
+              </div>
+              <div class="settings-card__body">
+                <p>Calendar export bundles scheduled activities and dated tasks into one iCalendar file. CSV exports are plain UTF-8 spreadsheets with one row per item.</p>
+                <div class="data-management__actions export-actions">
+                  <button class="primary-button" id="export-calendar" type="button">Export calendar (.ics)</button>
+                  <button class="secondary-button" id="export-tasks-csv" type="button">Tasks CSV</button>
+                  <button class="secondary-button" id="export-activities-csv" type="button">Schedule CSV</button>
+                </div>
+                <p class="settings-card__hint" id="export-status" role="status" aria-live="polite">Exports use your local times and include completed items for reference.</p>
+                <p class="form-error" id="export-error" role="alert" hidden></p>
+              </div>
+            </section>
+
             <section class="panel settings-card keyboard-shortcuts-card" aria-labelledby="keyboard-shortcuts-title">
               <div class="panel__header">
                 <div>
@@ -877,6 +939,8 @@
                   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4 4" /></svg>
                   <input id="shortcut-manual-search" type="search" autocomplete="off" aria-controls="shortcut-manual-categories" placeholder="Find a shortcut…" />
                 </label>
+                <p class="settings-card__hint" id="desktop-capture-status" role="status">Quick capture: Ctrl+Alt+N, even when TaskForge is minimized or unfocused.</p>
+                <p class="settings-card__hint" id="desktop-tray-status">Closing the window keeps TaskForge running in the system tray. Use Quit TaskForge in the tray menu to exit.</p>
                 <p class="shortcut-manual-status" id="shortcut-manual-status" role="status" aria-live="polite"></p>
                 <div class="keyboard-shortcuts-manual" id="shortcut-manual-categories" aria-label="Keyboard shortcut reference"></div>
                 <p class="shortcut-manual-empty" id="shortcut-manual-empty" hidden>No shortcuts match your search.</p>
@@ -896,14 +960,30 @@
                   <div><dt>Version</dt><dd id="application-version">Loading…</dd></div>
                 </dl>
                 <p class="creator-signature" id="creator-signature"></p>
-                <button class="danger-button" id="reset-application-data" type="button">Reset application data</button>
-                <p class="settings-card__hint">This permanently removes your tasks, schedule, habits, goals, focus statistics, and saved preferences.</p>
+                <button class="danger-button" id="reset-application-data" type="button">Reset profile data</button>
+                <p class="settings-card__hint">This permanently removes the current profile's tasks, schedule, habits, goals, focus statistics, and saved preferences. Other profiles are not affected.</p>
               </div>
             </section>
           </div>
         </section>
       </main>
     </div>
+    <dialog class="app-dialog" id="quick-capture-dialog" aria-labelledby="quick-capture-heading" aria-describedby="quick-capture-profile">
+      <form class="dialog-card" id="quick-capture-form" novalidate>
+        <div class="dialog-header">
+          <div><p class="welcome__date">CAPTURE NOW, PLAN LATER</p><h2 id="quick-capture-heading">Quick capture</h2></div>
+          <button class="icon-button" id="close-quick-capture" type="button" aria-label="Close quick capture">×</button>
+        </div>
+        <p class="form-hint" id="quick-capture-profile"></p>
+        <label class="form-field"><span>What needs doing?</span><input id="quick-capture-title" type="text" maxlength="120" required autocomplete="off" placeholder="Write a task and press Enter" /></label>
+        <p class="form-hint">Saved with medium priority and no due date. Add details in Tasks anytime.</p>
+        <p class="form-error" id="quick-capture-error" role="alert" hidden></p>
+        <div class="dialog-actions">
+          <button class="secondary-button" id="cancel-quick-capture" type="button">Cancel</button>
+          <button class="primary-button" id="save-quick-capture" type="submit">Add task</button>
+        </div>
+      </form>
+    </dialog>
     <dialog class="app-dialog" id="habit-dialog" aria-labelledby="habit-dialog-title">
       <form class="dialog-card" id="habit-form" novalidate>
         <div class="dialog-header">
@@ -1004,6 +1084,7 @@
           <span>Custom reminder <small>Optional · local time</small></span>
           <input id="task-reminder-at" type="datetime-local" />
         </label>
+        <fieldset class="recurrence-controls" id="task-recurrence"><legend>Repeat</legend></fieldset>
         <p class="form-error" id="task-form-error" role="alert" hidden></p>
         <div class="dialog-actions">
           <button class="secondary-button" id="cancel-task-dialog" type="button">Cancel</button>
@@ -1012,6 +1093,31 @@
       </form>
     </dialog>
 
+    <dialog class="app-dialog" id="bulk-reschedule-dialog" aria-labelledby="bulk-reschedule-title">
+      <form class="dialog-card" id="bulk-reschedule-form" novalidate>
+        <div class="dialog-header">
+          <div><p class="welcome__date">BULK ACTION</p><h2 id="bulk-reschedule-title">Reschedule tasks</h2></div>
+          <button class="icon-button" id="close-bulk-reschedule" type="button" aria-label="Close dialog">×</button>
+        </div>
+        <p class="form-hint" id="bulk-reschedule-summary"></p>
+        <div class="form-field">
+          <span id="bulk-reschedule-date-label">New due date <small>Optional</small></span>
+          <div class="form-date-control">
+            <input id="bulk-reschedule-date-display" class="form-date-control__display" type="text" inputmode="numeric" placeholder="DD/MM/YYYY" maxlength="10" autocomplete="off" aria-labelledby="bulk-reschedule-date-label" />
+            <button class="icon-button form-date-control__button" id="bulk-reschedule-date-open" type="button" aria-label="Choose new due date">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2" stroke="currentColor" stroke-width="1.7"></rect><path d="M7.5 3.5v3M16.5 3.5v3M4 9.5h16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"></path></svg>
+            </button>
+            <input id="bulk-reschedule-date" class="form-date-control__native" type="date" tabindex="-1" aria-hidden="true" />
+          </div>
+        </div>
+        <p class="form-hint">Leave empty to clear due dates. Reminders keep their local clock time. Recurring occurrences must be edited individually.</p>
+        <p class="form-error" id="bulk-reschedule-error" role="alert" hidden></p>
+        <div class="dialog-actions">
+          <button class="secondary-button" id="cancel-bulk-reschedule" type="button">Cancel</button>
+          <button class="primary-button" id="save-bulk-reschedule" type="submit">Reschedule</button>
+        </div>
+      </form>
+    </dialog>
     <dialog class="app-dialog" id="task-details-dialog" aria-labelledby="task-details-title">
       <div class="dialog-card">
         <div class="dialog-header">
@@ -1024,9 +1130,11 @@
         <div class="task-detail-meta" id="task-detail-meta"></div>
         <p class="task-detail-description" id="task-detail-description"></p>
         <p class="task-detail-created" id="task-detail-created"></p>
+        <div class="dialog-actions"><button class="danger-button" id="end-task-series" type="button" hidden>End series after this occurrence</button></div>
         <div class="dialog-actions dialog-actions--spread">
           <button class="danger-button" id="delete-task-button" type="button">Delete task</button>
           <div>
+            <button class="secondary-button" id="schedule-task-button" type="button">Add to schedule…</button>
             <button class="secondary-button" id="toggle-task-details" type="button">Mark completed</button>
             <button class="primary-button" id="edit-task-button" type="button">Edit task</button>
           </div>
@@ -1088,6 +1196,7 @@
             <option value="1440">1 day before</option>
           </select>
         </label>
+        <fieldset class="recurrence-controls" id="activity-recurrence"><legend>Repeat</legend></fieldset>
         <p class="form-error" id="activity-form-error" role="alert" hidden></p>
         <div class="dialog-actions">
           <button class="secondary-button" id="cancel-activity-dialog" type="button">Cancel</button>
@@ -1107,6 +1216,7 @@
         <div class="task-detail-meta" id="activity-detail-meta"></div>
         <p class="task-detail-description" id="activity-detail-description"></p>
         <p class="task-detail-created" id="activity-detail-created"></p>
+        <div class="dialog-actions"><button class="danger-button" id="end-activity-series" type="button" hidden>End series after this occurrence</button></div>
         <div class="dialog-actions dialog-actions--spread">
           <button class="danger-button" id="delete-activity-button" type="button">Delete activity</button>
           <div>
@@ -1125,6 +1235,14 @@
           </div>
           <button class="icon-button" id="close-notification-center" type="button" aria-label="Close notifications">×</button>
         </header>
+        <div class="notification-center__tabs" role="tablist" aria-label="Reminder lists">
+          <button class="notification-center__tab notification-center__tab--active" id="notification-tab-upcoming" type="button" role="tab" aria-selected="true" aria-controls="notification-center-list" data-notification-tab="upcoming">Upcoming</button>
+          <button class="notification-center__tab" id="notification-tab-recent" type="button" role="tab" aria-selected="false" aria-controls="notification-center-list" data-notification-tab="recent">Recent <span class="notification-center__tab-count" id="notification-recent-count" hidden></span></button>
+        </div>
+        <div class="notification-center__toolbar" id="notification-center-toolbar" hidden>
+          <button class="secondary-button" id="notification-mark-all-read" type="button">Mark all read</button>
+          <button class="secondary-button" id="notification-clear-history" type="button">Clear history</button>
+        </div>
         <p class="notification-center__summary" id="notification-center-summary" aria-live="polite"></p>
         <div class="notification-center__list" id="notification-center-list" aria-live="polite"></div>
       </section>
@@ -1147,10 +1265,158 @@
         </footer>
       </section>
     </dialog>
+    <dialog class="app-dialog profile-dialog" id="profile-dialog" aria-labelledby="profile-dialog-title">
+      <div class="dialog-card">
+        <div class="dialog-header">
+          <div>
+            <p class="welcome__date">LOCAL WORKSPACES</p>
+            <h2 id="profile-dialog-title">Profiles</h2>
+          </div>
+          <button class="icon-button" id="close-profile-dialog" type="button" aria-label="Close profiles">×</button>
+        </div>
+        <p class="profile-dialog__intro">Each profile keeps its own tasks, schedule, habits, goals, focus history, and appearance. Profiles stay on this device.</p>
+
+        <section class="profile-section profile-section--current" aria-labelledby="profile-current-title">
+          <div class="profile-section__header">
+            <h3 id="profile-current-title">Current profile</h3>
+            <span class="profile-badge" id="profile-current-badge">Unlocked</span>
+          </div>
+          <div class="profile-identity">
+            <span class="profile__avatar profile__avatar--large" id="profile-current-avatar" aria-hidden="true">D</span>
+            <div>
+              <strong id="profile-current-name">Default</strong>
+              <p id="profile-current-detail">Local profile</p>
+            </div>
+          </div>
+          <form id="profile-edit-form" class="profile-form" novalidate>
+            <label class="form-field">
+              <span>Profile name <strong aria-hidden="true">*</strong></span>
+              <input id="profile-edit-name" type="text" maxlength="40" autocomplete="off" required />
+            </label>
+            <div class="form-field">
+              <span>Profile color</span>
+              <div class="profile-colors" id="profile-edit-colors" role="radiogroup" aria-label="Profile color"></div>
+            </div>
+            <p class="form-error" id="profile-edit-error" role="alert" hidden></p>
+            <div class="dialog-actions">
+              <button class="secondary-button" id="profile-edit-save" type="submit">Save changes</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="profile-section profile-section--security" aria-labelledby="profile-security-title">
+          <div class="profile-section__header">
+            <h3 id="profile-security-title">Profile lock</h3>
+          </div>
+          <p class="profile-section__hint" id="profile-security-status">No PIN is set. Anyone using this device can open this profile.</p>
+          <form id="profile-pin-form" class="profile-form" novalidate>
+            <div class="form-row">
+              <label class="form-field">
+                <span>New PIN <small>4–8 digits</small></span>
+                <input id="profile-pin-new" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password" />
+              </label>
+              <label class="form-field">
+                <span>Confirm PIN</span>
+                <input id="profile-pin-confirm" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password" />
+              </label>
+            </div>
+            <p class="form-error" id="profile-pin-error" role="alert" hidden></p>
+            <div class="dialog-actions dialog-actions--spread">
+              <button class="secondary-button" id="profile-pin-remove" type="button" hidden>Remove PIN</button>
+              <div>
+                <button class="secondary-button" id="profile-lock-now" type="button">Lock now</button>
+                <button class="primary-button" id="profile-pin-save" type="submit">Save PIN</button>
+              </div>
+            </div>
+          </form>
+        </section>
+
+        <section class="profile-section" aria-labelledby="profile-list-title">
+          <div class="profile-section__header">
+            <h3 id="profile-list-title">Profiles on this device</h3>
+          </div>
+          <ul class="profile-list" id="profile-list" aria-live="polite"></ul>
+          <form id="profile-switch-form" class="profile-switch-form" hidden>
+            <p>Enter the PIN for <strong id="profile-switch-name"></strong>.</p>
+            <label class="form-field">
+              <span>PIN</span>
+              <input id="profile-switch-pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off" />
+            </label>
+            <p class="form-error" id="profile-switch-error" role="alert" hidden></p>
+            <div class="dialog-actions">
+              <button class="secondary-button" id="profile-switch-cancel" type="button">Cancel</button>
+              <button class="primary-button" id="profile-switch-submit" type="submit">Unlock &amp; switch</button>
+            </div>
+          </form>
+          <form id="profile-create-form" class="profile-form profile-create" novalidate>
+            <div class="profile-section__header"><h4>Create a profile</h4></div>
+            <label class="form-field">
+              <span>Name <strong aria-hidden="true">*</strong></span>
+              <input id="profile-create-name" type="text" maxlength="40" autocomplete="off" required />
+            </label>
+            <div class="form-field">
+              <span>Color</span>
+              <div class="profile-colors" id="profile-create-colors" role="radiogroup" aria-label="New profile color"></div>
+            </div>
+            <label class="form-field">
+              <span>PIN <small>Optional, 4–8 digits</small></span>
+              <input id="profile-create-pin" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password" />
+            </label>
+            <p class="form-error" id="profile-create-error" role="alert" hidden></p>
+            <div class="dialog-actions">
+              <button class="primary-button" id="profile-create-submit" type="submit">Create &amp; switch</button>
+            </div>
+          </form>
+        </section>
+
+        <p class="profile-dialog__hint">A profile PIN keeps a workspace private inside TaskForge. It is not full-disk encryption; anyone with access to your Windows account and the TaskForge data folder can read the underlying files.</p>
+      </div>
+    </dialog>
+
+    <dialog class="app-dialog" id="profile-delete-dialog" aria-labelledby="profile-delete-title">
+      <div class="dialog-card">
+        <div class="dialog-header">
+          <div>
+            <p class="welcome__date">REMOVE PROFILE</p>
+            <h2 id="profile-delete-title">Delete profile?</h2>
+          </div>
+          <button class="icon-button" id="close-profile-delete-dialog" type="button" aria-label="Close dialog">×</button>
+        </div>
+        <p>Delete <strong id="profile-delete-name"></strong> and its workspace data? The data folder will be moved out of the app instead of erased, so it can be recovered manually.</p>
+        <p class="form-error" id="profile-delete-error" role="alert" hidden></p>
+        <div class="dialog-actions">
+          <button class="secondary-button" id="cancel-profile-delete" type="button">Cancel</button>
+          <button class="danger-button" id="confirm-profile-delete" type="button">Delete profile</button>
+        </div>
+      </div>
+    </dialog>
+
+    <div class="lock-screen" id="lock-screen" hidden>
+      <section class="lock-card" role="dialog" aria-modal="true" aria-labelledby="lock-screen-title">
+        <div class="lock-card__brand">
+          <img src="../assets/taskforge-mark.svg" alt="" />
+          <span>TaskForge</span>
+        </div>
+        <p class="welcome__date">PROFILE LOCKED</p>
+        <span class="profile__avatar profile__avatar--large" id="lock-profile-avatar" aria-hidden="true">D</span>
+        <h1 id="lock-screen-title">Unlock <span id="lock-profile-name">profile</span></h1>
+        <p class="lock-card__hint" id="lock-screen-hint">Enter this profile's PIN to continue.</p>
+        <form class="lock-form" id="lock-form" novalidate>
+          <label class="form-field">
+            <span>PIN</span>
+            <input id="lock-pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off" required />
+          </label>
+          <p class="form-error" id="lock-error" role="alert" hidden></p>
+          <button class="primary-button" id="lock-submit" type="submit">Unlock profile</button>
+        </form>
+        <button class="secondary-button lock-card__switch" id="lock-switch-profile" type="button">Switch profile</button>
+      </section>
+    </div>
     <div class="toast" id="task-toast" role="status" aria-live="polite"></div>
     <script src="./command-palette-service.js" defer></script>
     <script src="./keyboard-shortcuts.js" defer></script>
     <script src="./search-service.js" defer></script>
+    <script src="./analytics-service.js" defer></script>
     <script src="./renderer.js" defer></script>
   </body>
 </html>

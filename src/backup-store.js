@@ -9,7 +9,7 @@ const scheduleStore = require('./schedule-store');
 const taskStore = require('./task-store');
 
 const applicationName = 'TaskForge';
-const backupVersion = 1;
+const backupVersion = 2;
 const maximumBackupBytes = 100 * 1024 * 1024;
 const dataKeys = ['tasks', 'schedules', 'focus', 'habits', 'goals', 'settings'];
 
@@ -29,8 +29,8 @@ function validateBackup(input) {
   if (input.application !== applicationName) {
     throw new TypeError('This file was not created by TaskForge.');
   }
-  if (!Number.isInteger(input.backupVersion) || input.backupVersion !== backupVersion) {
-    throw new TypeError(`This backup version is not supported. Supported version: ${backupVersion}.`);
+  if (![1, backupVersion].includes(input.backupVersion)) {
+    throw new TypeError(`This backup version is not supported. Supported versions: 1 and ${backupVersion}.`);
   }
   if (typeof input.createdAt !== 'string'
     || Number.isNaN(Date.parse(input.createdAt))
@@ -43,6 +43,10 @@ function validateBackup(input) {
   }
 
   const { data } = input;
+  if (input.backupVersion === 1 && [data.tasks, data.schedules].some((items) =>
+    Array.isArray(items) && items.some((item) => item?.recurrence || item?.skipped))) {
+    throw new TypeError('Recurring items require backup version 2.');
+  }
   for (const [key, label, validate] of [
     ['tasks', 'tasks', taskStore.validateBackupTasks],
     ['schedules', 'schedules and activities', scheduleStore.validateBackupActivities],
@@ -81,7 +85,15 @@ async function createBackup(filePaths) {
     application: applicationName,
     backupVersion,
     createdAt: new Date().toISOString(),
-    data: { tasks, schedules, focus, habits, goals, settings },
+    data: {
+      tasks,
+      schedules,
+      // Timers are profile-local runtime state, not portable backup data.
+      focus: { settings: focus.settings, stats: focus.stats },
+      habits,
+      goals,
+      settings,
+    },
   });
 }
 

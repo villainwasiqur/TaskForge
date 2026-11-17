@@ -3,21 +3,44 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('taskApi', {
   list: () => ipcRenderer.invoke('tasks:list'),
   add: (task) => ipcRenderer.invoke('tasks:add', task),
-  update: (id, task) => ipcRenderer.invoke('tasks:update', id, task),
+  update: (id, task, scope) => ipcRenderer.invoke('tasks:update', id, task, scope),
+  skip: (id, skipped) => ipcRenderer.invoke('tasks:skip', id, skipped),
+  endSeries: (id) => ipcRenderer.invoke('tasks:end-series', id),
   setCompleted: (id, completed) =>
     ipcRenderer.invoke('tasks:set-completed', id, completed),
   delete: (id) => ipcRenderer.invoke('tasks:delete', id),
+  bulkComplete: (ids, completed) => ipcRenderer.invoke('tasks:bulk-complete', ids, completed),
+  bulkDelete: (ids) => ipcRenderer.invoke('tasks:bulk-delete', ids),
+  bulkReschedule: (ids, dueDate) => ipcRenderer.invoke('tasks:bulk-reschedule', ids, dueDate),
 });
 
 contextBridge.exposeInMainWorld('scheduleApi', {
   list: () => ipcRenderer.invoke('schedule:list'),
   add: (activity, allowOverlap) =>
     ipcRenderer.invoke('schedule:add', activity, allowOverlap),
-  update: (id, activity, allowOverlap) =>
-    ipcRenderer.invoke('schedule:update', id, activity, allowOverlap),
+  update: (id, activity, allowOverlap, scope) =>
+    ipcRenderer.invoke('schedule:update', id, activity, allowOverlap, scope),
+  skip: (id, skipped) => ipcRenderer.invoke('schedule:skip', id, skipped),
+  endSeries: (id) => ipcRenderer.invoke('schedule:end-series', id),
   setCompleted: (id, completed) =>
     ipcRenderer.invoke('schedule:set-completed', id, completed),
   delete: (id) => ipcRenderer.invoke('schedule:delete', id),
+  bulkComplete: (ids, completed) => ipcRenderer.invoke('schedule:bulk-complete', ids, completed),
+  bulkDelete: (ids) => ipcRenderer.invoke('schedule:bulk-delete', ids),
+});
+
+contextBridge.exposeInMainWorld('undoApi', {
+  state: () => ipcRenderer.invoke('undo:state'),
+  undo: () => ipcRenderer.invoke('undo:undo'),
+  redo: () => ipcRenderer.invoke('undo:redo'),
+  onState: (callback) => {
+    if (typeof callback !== 'function') {
+      throw new TypeError('Undo state callback must be a function.');
+    }
+    const listener = (_event, state) => callback(state);
+    ipcRenderer.on('undo:state', listener);
+    return () => ipcRenderer.removeListener('undo:state', listener);
+  },
 });
 
 contextBridge.exposeInMainWorld('habitApi', {
@@ -75,6 +98,44 @@ contextBridge.exposeInMainWorld('focusApi', {
 
 contextBridge.exposeInMainWorld('notificationApi', {
   list: () => ipcRenderer.invoke('notifications:list'),
+  markRead: (ids) => ipcRenderer.invoke('notifications:mark-read', ids),
+  clearHistory: () => ipcRenderer.invoke('notifications:clear-history'),
+  snooze: (id, until) => ipcRenderer.invoke('notifications:snooze', id, until),
+  unsnooze: (id) => ipcRenderer.invoke('notifications:unsnooze', id),
+  test: () => ipcRenderer.invoke('notifications:test'),
+  onChanged: (callback) => {
+    if (typeof callback !== 'function') {
+      throw new TypeError('Notification event callback must be a function.');
+    }
+    const listener = (_event, state) => callback(state);
+    ipcRenderer.on('notifications:changed', listener);
+    return () => ipcRenderer.removeListener('notifications:changed', listener);
+  },
+  onOpenTarget: (callback) => {
+    if (typeof callback !== 'function') {
+      throw new TypeError('Notification event callback must be a function.');
+    }
+    const listener = (_event, target) => callback(target);
+    ipcRenderer.on('notifications:open-target', listener);
+    return () => ipcRenderer.removeListener('notifications:open-target', listener);
+  },
+});
+
+contextBridge.exposeInMainWorld('profileApi', {
+  state: () => ipcRenderer.invoke('profiles:state'),
+  create: (profile) => ipcRenderer.invoke('profiles:create', profile),
+  update: (id, profile) => ipcRenderer.invoke('profiles:update', id, profile),
+  activate: (id, pin) => ipcRenderer.invoke('profiles:activate', id, pin),
+  setPin: (id, pin) => ipcRenderer.invoke('profiles:set-pin', id, pin),
+  lock: () => ipcRenderer.invoke('profiles:lock'),
+  unlock: (pin) => ipcRenderer.invoke('profiles:unlock', pin),
+  delete: (id) => ipcRenderer.invoke('profiles:delete', id),
+});
+
+contextBridge.exposeInMainWorld('exportApi', {
+  calendar: () => ipcRenderer.invoke('export:calendar'),
+  tasksCsv: () => ipcRenderer.invoke('export:tasks-csv'),
+  activitiesCsv: () => ipcRenderer.invoke('export:activities-csv'),
 });
 
 contextBridge.exposeInMainWorld('appApi', {
@@ -85,4 +146,15 @@ contextBridge.exposeInMainWorld('appApi', {
   exportBackup: () => ipcRenderer.invoke('app:backup-export'),
   restoreBackup: () => ipcRenderer.invoke('app:backup-restore'),
   getLastBackup: () => ipcRenderer.invoke('app:backup-last'),
+  desktopReady: () => ipcRenderer.invoke('app:desktop-ready'),
+  consumeCapture: () => ipcRenderer.invoke('app:consume-capture'),
+  quickCapture: (profileId, title) => ipcRenderer.invoke('app:quick-capture-add', profileId, title),
+  onQuickCapture: (callback) => {
+    if (typeof callback !== 'function') {
+      throw new TypeError('Quick capture callback must be a function.');
+    }
+    const listener = () => callback();
+    ipcRenderer.on('app:quick-capture', listener);
+    return () => ipcRenderer.removeListener('app:quick-capture', listener);
+  },
 });

@@ -99,6 +99,16 @@ test('universal search filters categories and handles empty and unmatched querie
   assert.deepEqual(searchItems(index, 'not-present'), []);
 });
 
+test('recurring and skipped occurrences are searchable without being labeled pending', () => {
+  const index = buildSearchIndex({
+    tasks: [{ ...data.tasks[0], skipped: true, recurrence: { frequency: 'daily' } }],
+    activities: [{ ...data.activities[0], skipped: true, recurrence: { frequency: 'weekly' } }],
+  });
+  assert.equal(searchItems(index, 'skipped').length, 2);
+  assert.equal(searchItems(index, 'recurring').length, 2);
+  assert.equal(searchItems(index, 'pending').length, 0);
+});
+
 test('recent search history is trimmed, deduplicated, bounded, and updated only on commit', () => {
   const initial = normalizeRecentSearches(['  alpha  beta ', 'ALPHA beta', 'c', 42, 'gamma']);
   assert.deepEqual(initial, ['alpha beta', 'gamma']);

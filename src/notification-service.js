@@ -42,7 +42,7 @@ function buildReminderEvents({ tasks, activities, habits, goals, settings }, now
 
   if (isCategoryEnabled(settings, 'tasks')) {
     for (const task of tasks) {
-      if (task.completed) {
+      if (task.completed || task.skipped) {
         continue;
       }
       if (task.reminderAt) {
@@ -85,7 +85,7 @@ function buildReminderEvents({ tasks, activities, habits, goals, settings }, now
 
   if (isCategoryEnabled(settings, 'schedule')) {
     for (const activity of activities) {
-      if (activity.completed) {
+      if (activity.completed || activity.skipped) {
         continue;
       }
       const leadMinutes = activity.reminderMinutesBefore
@@ -192,12 +192,62 @@ function getUpcomingEvents(events, now = Date.now(), horizonMs = notificationCen
   ));
 }
 
+function snoozeDeliveryId(eventId, until) {
+  return `${eventId}:snoozed:${until}`;
+}
+
+function isSnoozed(snoozes, eventId, now = Date.now()) {
+  const nowMs = now instanceof Date ? now.getTime() : now;
+  const until = snoozes[eventId];
+  return until !== undefined && Date.parse(until) > nowMs;
+}
+
+function getExpiredSnoozes(events, snoozes, now = Date.now()) {
+  const nowMs = now instanceof Date ? now.getTime() : now;
+  const eventsById = new Map(events.map((event) => [event.id, event]));
+  const expired = [];
+  for (const [id, until] of Object.entries(snoozes)) {
+    const event = eventsById.get(id);
+    if (event && Date.parse(until) <= nowMs) {
+      expired.push({ event, until, deliveryId: snoozeDeliveryId(id, until) });
+    }
+  }
+  return expired.sort((left, right) => Date.parse(left.until) - Date.parse(right.until));
+}
+
+function getStaleSnoozeIds(events, snoozes) {
+  const eventIds = new Set(events.map((event) => event.id));
+  return Object.keys(snoozes).filter((id) => !eventIds.has(id));
+}
+
+function getNextWakeTime(events, snoozes, now = Date.now()) {
+  const nowMs = now instanceof Date ? now.getTime() : now;
+  const eventIds = new Set(events.map((event) => event.id));
+  const times = [];
+  const nextEvent = getNextEvent(events, nowMs);
+  if (nextEvent) {
+    times.push(nextEvent.at);
+  }
+  for (const [id, until] of Object.entries(snoozes)) {
+    const at = Date.parse(until);
+    if (eventIds.has(id) && at > nowMs) {
+      times.push(at);
+    }
+  }
+  return times.length > 0 ? Math.min(...times) : null;
+}
+
 module.exports = {
   buildReminderEvents,
   getDueEvents,
+  getExpiredSnoozes,
   getNextEvent,
+  getNextWakeTime,
+  getStaleSnoozeIds,
   getUpcomingEvents,
   isCategoryEnabled,
+  isSnoozed,
   notificationCenterHorizonMs,
   reminderGraceMs,
+  snoozeDeliveryId,
 };

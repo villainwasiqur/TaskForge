@@ -67,18 +67,47 @@ function validateSettings(input) {
   };
 }
 
-function defaultData() {
+function validateTimer(input) {
+  if (input === null) {
+    return null;
+  }
+  if (!isPlainObject(input)
+    || typeof input.id !== 'string'
+    || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.id)
+    || !['focus', 'shortBreak', 'longBreak'].includes(input.mode)
+    || !['running', 'paused'].includes(input.status)
+    || !Number.isInteger(input.remainingMs)
+    || input.remainingMs <= 0
+    || input.remainingMs > durationLimits.maximum * 60_000
+    || (input.status === 'running'
+      ? !Number.isSafeInteger(input.deadline) || input.deadline <= 0
+      : input.deadline !== null)) {
+    throw new TypeError('Active focus timer is invalid.');
+  }
+  validateDuration(input.sessionMinutes, 'Timer session duration');
+  return {
+    id: input.id,
+    mode: input.mode,
+    status: input.status,
+    remainingMs: input.remainingMs,
+    deadline: input.deadline,
+    sessionMinutes: input.sessionMinutes,
+  };
+}
+
+function defaultData(now = Date.now()) {
   return {
     settings: { ...defaultSettings },
     stats: {
       totalCompletedSessions: 0,
       totalFocusMinutes: 0,
       cycleProgress: 0,
-      todayDate: localDateKey(new Date()),
+      todayDate: localDateKey(new Date(now)),
       todayCompletedSessions: 0,
       todayFocusMinutes: 0,
       dailyHistory: {},
     },
+    activeTimer: null,
   };
 }
 
@@ -160,13 +189,19 @@ async function preserveCorruptFile(filePath, reason) {
   console.error(`Focus data was invalid (${reason}); moved the file to ${backupPath} and restored defaults.`);
 }
 
-async function readData(filePath) {
+async function preservePreTimerFile(filePath) {
+  const backupPath = `${filePath}.pre-v3.1-${Date.now()}-${randomUUID()}`;
+  // Never rewrite legacy or invalid timer data unless its original bytes are safe.
+  await fs.copyFile(filePath, backupPath, fs.constants.COPYFILE_EXCL);
+}
+
+async function readData(filePath, now = Date.now()) {
   let contents;
   try {
     contents = await fs.readFile(filePath, 'utf8');
   } catch (error) {
     if (error.code === 'ENOENT') {
-      const data = defaultData();
+      const data = defaultData(now);
       await writeData(filePath, data);
       return data;
     }
@@ -178,16 +213,30 @@ async function readData(filePath) {
     data = JSON.parse(contents);
   } catch (error) {
     await preserveCorruptFile(filePath, error.message);
-    const defaults = defaultData();
+    const defaults = defaultData(now);
     await writeData(filePath, defaults);
     return defaults;
   }
 
   if (!isValidData(data)) {
     await preserveCorruptFile(filePath, 'the file did not contain valid focus settings and statistics');
-    const defaults = defaultData();
+    const defaults = defaultData(now);
     await writeData(filePath, defaults);
     return defaults;
+  }
+
+  let timerMigrated = false;
+  try {
+    const timer = validateTimer(data.activeTimer);
+    timerMigrated = timer !== null && Object.keys(data.activeTimer).length !== Object.keys(timer).length;
+    data.activeTimer = timer;
+  } catch {
+    // Timer damage must not discard otherwise valid settings or statistics.
+    data.activeTimer = null;
+    timerMigrated = true;
+  }
+  if (timerMigrated) {
+    await preservePreTimerFile(filePath);
   }
 
   let migrated = false;
@@ -200,7 +249,7 @@ async function readData(filePath) {
     migrated = true;
   }
 
-  const today = localDateKey(new Date());
+  const today = localDateKey(new Date(now));
   if (data.stats.todayDate !== today) {
     data.stats.todayDate = today;
     data.stats.todayCompletedSessions = 0;
@@ -213,7 +262,7 @@ async function readData(filePath) {
       minutes: data.stats.todayFocusMinutes,
     };
   }
-  if (migrated) {
+  if (migrated || timerMigrated) {
     await writeData(filePath, data);
   }
   return data;
@@ -240,15 +289,62 @@ async function recordFocusSession(filePath, minutes) {
     data.stats.todayCompletedSessions = 0;
     data.stats.todayFocusMinutes = 0;
   }
-  data.stats.totalCompletedSessions += 1;
-  data.stats.totalFocusMinutes += minutes;
-  data.stats.todayCompletedSessions += 1;
-  data.stats.todayFocusMinutes += minutes;
-  const dailySummary = data.stats.dailyHistory[today] ?? { sessions: 0, minutes: 0 };
+  applyFocusSession(data.stats, minutes, today);
+  await writeData(filePath, data);
+  return data;
+}
+
+function applyFocusSession(stats, minutes, date) {
+  stats.totalCompletedSessions += 1;
+  stats.totalFocusMinutes += minutes;
+  if (stats.todayDate === date) {
+    stats.todayCompletedSessions += 1;
+    stats.todayFocusMinutes += minutes;
+  }
+  const dailySummary = stats.dailyHistory[date] ?? { sessions: 0, minutes: 0 };
   dailySummary.sessions += 1;
   dailySummary.minutes += minutes;
-  data.stats.dailyHistory[today] = dailySummary;
-  data.stats.cycleProgress = Math.min(3, data.stats.cycleProgress + 1);
+  stats.dailyHistory[date] = dailySummary;
+  stats.cycleProgress = Math.min(3, stats.cycleProgress + 1);
+}
+
+async function saveTimer(filePath, input) {
+  const timer = validateTimer(input);
+  const data = await readData(filePath);
+  data.activeTimer = timer;
+  await writeData(filePath, data);
+  return data;
+}
+
+async function completeTimer(filePath, timerId, { now = Date.now(), resume = false } = {}) {
+  if (!Number.isSafeInteger(now) || now <= 0 || typeof resume !== 'boolean') {
+    throw new TypeError('Timer completion requires a positive safe timestamp and a boolean resume flag.');
+  }
+  const data = await readData(filePath, now);
+  const timer = data.activeTimer;
+  if (!timer || timer.id !== timerId || timer.status !== 'running' || timer.deadline > now) {
+    return data;
+  }
+
+  if (timer.mode === 'focus') {
+    applyFocusSession(data.stats, timer.sessionMinutes, localDateKey(new Date(timer.deadline)));
+  } else if (timer.mode === 'longBreak') {
+    data.stats.cycleProgress = 0;
+  }
+  const mode = timer.mode === 'focus'
+    ? (data.stats.cycleProgress >= 3 ? 'longBreak' : 'shortBreak')
+    : 'focus';
+  const sessionMinutes = data.settings[`${mode}Minutes`];
+  const remainingMs = sessionMinutes * 60_000;
+  data.activeTimer = validateTimer({
+    id: randomUUID(),
+    mode,
+    status: resume ? 'paused' : 'running',
+    remainingMs,
+    deadline: resume ? null : now + remainingMs,
+    sessionMinutes,
+  });
+  // Commit the credit and its successor together: stale completion IDs cannot replay.
   await writeData(filePath, data);
   return data;
 }
@@ -261,11 +357,13 @@ async function recordLongBreakCompletion(filePath) {
 }
 
 module.exports = {
+  completeTimer,
   defaultSettings,
   durationLimits,
   loadFocusData,
   recordFocusSession,
   recordLongBreakCompletion,
   saveSettings,
+  saveTimer,
   validateBackupData,
 };

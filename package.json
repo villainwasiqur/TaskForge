@@ -1,18 +1,22 @@
 {
   "name": "taskforge",
-  "version": "2.1.0",
+  "version": "3.7.0",
   "description": "A local-first desktop productivity application.",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "test": "node --test",
-    "dist:win": "electron-builder --win"
+    "dist:win": "electron-builder --win",
+    "test:e2e": "node scripts/smoke-ui.cjs",
+    "verify:dist": "node scripts/verify-package.cjs",
+    "release:win": "npm test && electron-builder --win && node scripts/verify-package.cjs --dir dist"
   },
   "keywords": [],
   "author": "AnonymousVillain35",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
+    "@electron/asar": "^3.4.1",
     "electron": "^45.2.1",
     "electron-builder": "^26.18.0"
   },

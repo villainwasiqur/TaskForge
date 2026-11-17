@@ -34,8 +34,8 @@ function buildSearchIndex({ tasks = [], activities = [], habits = [], goals = []
   const results = [];
 
   tasks.forEach((task) => {
-    const status = task.completed ? 'Completed' : 'Pending';
-    const meta = [status, task.priority, task.dueDate].filter(Boolean).join(' · ');
+    const status = task.skipped ? 'Skipped' : task.completed ? 'Completed' : 'Pending';
+    const meta = [status, task.priority, task.dueDate, task.recurrence ? 'Recurring' : ''].filter(Boolean).join(' · ');
     results.push(createResult(
       'tasks',
       task.id,
@@ -47,8 +47,8 @@ function buildSearchIndex({ tasks = [], activities = [], habits = [], goals = []
   });
 
   activities.forEach((activity) => {
-    const status = activity.completed ? 'Completed' : 'Pending';
-    const meta = [activity.category, activity.date, activity.startTime, status].filter(Boolean).join(' · ');
+    const status = activity.skipped ? 'Skipped' : activity.completed ? 'Completed' : 'Pending';
+    const meta = [activity.category, activity.date, activity.startTime, status, activity.recurrence ? 'Recurring' : ''].filter(Boolean).join(' · ');
     results.push(createResult(
       'activities',
       activity.id,

@@ -13,6 +13,8 @@ const COMMANDS = [
   { id: 'create-habit', category: 'Quick Actions', label: 'Add New Habit', description: 'Open the new habit form.', keywords: ['routine'] },
   { id: 'create-goal', category: 'Quick Actions', label: 'Create New Goal', description: 'Open the new goal form.', keywords: ['milestone'] },
   { id: 'open-search', category: 'Quick Actions', label: 'Open Global Search', description: 'Search tasks, activities, habits, goals, and reminders.', keywords: ['find'] },
+  { id: 'undo', category: 'Quick Actions', label: 'Undo Last Change', description: 'Undo the most recent task or schedule change.', keywords: ['revert', 'ctrl z'] },
+  { id: 'redo', category: 'Quick Actions', label: 'Redo Change', description: 'Reapply the most recently undone change.', keywords: ['ctrl y'] },
   { id: 'open-customization', category: 'Appearance', label: 'Open Visual Customization Center', description: 'Open theme, accent, and appearance settings.', keywords: ['theme', 'appearance', 'customize'] },
   { id: 'theme-hacker', category: 'Appearance', label: 'Switch to Toxic Green', description: 'Apply the Toxic Green theme.', keywords: ['theme', 'green'] },
   { id: 'theme-crimson', category: 'Appearance', label: 'Switch to Crimson Reactor', description: 'Apply the Crimson Reactor theme.', keywords: ['theme', 'red'] },
